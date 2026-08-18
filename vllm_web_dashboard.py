@@ -377,11 +377,20 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .sw-dot{display:block;width:26px;height:26px;border-radius:50%;background:var(--sw);border:2px solid transparent;box-shadow:0 0 0 2px var(--bg) inset}
 .sw input:checked+.sw-dot{border-color:var(--fg);transform:scale(1.08)}
 .sw:hover .sw-dot{filter:brightness(1.12)}
-.custom-pick{display:flex;flex-direction:column;gap:6px;padding:8px;border:1px solid var(--accent);border-radius:8px;background:var(--bg);min-width:150px}
+.sw-rc{position:relative;width:26px;height:26px;border-radius:50%;border:none;padding:0;cursor:pointer;background:transparent}
+.sw-rc-ring{display:block;width:26px;height:26px;border-radius:50%;background:conic-gradient(#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);box-shadow:0 0 0 2px var(--bg) inset}
+.sw-rc:hover .sw-rc-ring{filter:brightness(1.12)}
+.sw-rc::after{content:'';position:absolute;inset:7px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
+.cp-pop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:60}
+.cp-pop[hidden]{display:none}
+.cp-pop-inner{background:var(--panel);border:1px solid var(--accent);border-radius:10px;padding:14px 16px;width:min(280px,90vw);box-shadow:0 10px 40px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:10px}
+.cp-pop-head{display:flex;align-items:center;justify-content:space-between;color:var(--fg);font-size:13px;font-weight:700}
+.cp-x{background:transparent;border:none;color:var(--dim);font-size:20px;line-height:1;cursor:pointer;padding:0 2px}
+.cp-x:hover{color:var(--fg)}
 .cp-row{display:flex;align-items:center;gap:8px}
-.cp-hex{flex:1;min-width:0;background:var(--panel);border:1px solid var(--accent);border-radius:6px;color:var(--fg);font-family:var(--mono);font-size:13px;padding:5px 8px;text-transform:lowercase}
+.cp-hex{flex:1;min-width:0;background:var(--bg);border:1px solid var(--accent);border-radius:6px;color:var(--fg);font-family:var(--mono);font-size:13px;padding:6px 8px;text-transform:lowercase}
 .cp-hex:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
-.cp-swatch{width:26px;height:26px;border-radius:6px;border:1px solid var(--accent);flex:none;background:var(--accent)}
+.cp-swatch{width:28px;height:28px;border-radius:6px;border:1px solid var(--accent);flex:none;background:var(--accent)}
 .cp-chan{display:flex;align-items:center;gap:8px;color:var(--dim);font-size:11px;font-weight:700}
 .cp-chan>span:first-child{width:10px}
 .cp-range{-webkit-appearance:none;appearance:none;flex:1;height:10px;border-radius:5px;outline:none;cursor:pointer;border:1px solid var(--accent)}
@@ -390,7 +399,6 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .ch-b{background:linear-gradient(to right,#000,#00f)}
 .cp-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:var(--fg);border:2px solid var(--bg);cursor:pointer}
 .cp-range::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--fg);border:2px solid var(--bg);cursor:pointer}
-.btn.mini{padding:4px 12px;font-size:12px;line-height:1.4;align-self:stretch}
 .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
 .btn{background:var(--accent);color:#0b0e14;border:none;border-radius:6px;padding:8px 16px;font-family:var(--mono);font-size:13px;font-weight:700;cursor:pointer}
 .btn:hover{filter:brightness(1.1)}
@@ -497,18 +505,24 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
         <label class="sw" title="Оранжевый"><input type="radio" name="set-accent-presets" value="#ffa657"/><span class="sw-dot" style="--sw:#ffa657"></span></label>
         <label class="sw" title="Красный"><input type="radio" name="set-accent-presets" value="#ff7b72"/><span class="sw-dot" style="--sw:#ff7b72"></span></label>
         <label class="sw" title="Розовый"><input type="radio" name="set-accent-presets" value="#ff7eb6"/><span class="sw-dot" style="--sw:#ff7eb6"></span></label>
-        <div class="custom-pick" title="Произвольный цвет">
-          <div class="cp-row">
-            <input type="text" id="set-accent-hex" class="cp-hex" maxlength="7" spellcheck="false" aria-label="HEX-код цвета" value="#3fb950"/>
-            <span class="cp-swatch" id="cp-swatch"></span>
-          </div>
-          <label class="cp-chan">R<input type="range" id="cp-r" class="cp-range ch-r" min="0" max="255" value="63"/></label>
-          <label class="cp-chan">G<input type="range" id="cp-g" class="cp-range ch-g" min="0" max="255" value="185"/></label>
-          <label class="cp-chan">B<input type="range" id="cp-b" class="cp-range ch-b" min="0" max="255" value="80"/></label>
-          <button type="button" class="btn mini" id="set-accent-ok" title="Применить выбранный цвет">OK</button>
-        </div>
+        <button type="button" class="sw-rc" id="set-accent-open" title="Произвольный цвет (открыть пикер)">
+          <span class="sw-rc-ring"></span>
+        </button>
       </div>
-      <span class="fld-hint">Цвет рамок, графиков и кнопок. HEX-код или ползунки R/G/B, затем OK.</span>
+      <span class="fld-hint">Цвет рамок, графиков и кнопок. Радужная кнопка — произвольный цвет.</span>
+    </div>
+    <div class="cp-pop" id="cp-pop" hidden>
+      <div class="cp-pop-inner">
+        <div class="cp-pop-head">Произвольный цвет<button type="button" class="cp-x" id="cp-close" title="Закрыть">&times;</button></div>
+        <div class="cp-row">
+          <input type="text" id="set-accent-hex" class="cp-hex" maxlength="7" spellcheck="false" aria-label="HEX-код цвета" value="#3fb950"/>
+          <span class="cp-swatch" id="cp-swatch"></span>
+        </div>
+        <label class="cp-chan">R<input type="range" id="cp-r" class="cp-range ch-r" min="0" max="255" value="63"/></label>
+        <label class="cp-chan">G<input type="range" id="cp-g" class="cp-range ch-g" min="0" max="255" value="185"/></label>
+        <label class="cp-chan">B<input type="range" id="cp-b" class="cp-range ch-b" min="0" max="255" value="80"/></label>
+        <button type="button" class="btn" id="set-accent-ok" title="Применить выбранный цвет">OK</button>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn ghost" id="set-cancel">Отмена</button>
@@ -715,6 +729,17 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!modal.hidden)close
 document.querySelectorAll('input[name=set-accent-presets]').forEach(r=>{
   r.onchange=()=>{ pickerSetHex(r.value,false); };
 });
+// rainbow button opens the custom-picker popup, synced to the current accent
+function openCpPop(){
+  pickerSetHex(curAccent,false);
+  $('cp-pop').hidden=false;
+  setTimeout(()=>$('set-accent-hex').select(),30);
+}
+function closeCpPop(){ $('cp-pop').hidden=true; }
+$('set-accent-open').onclick=openCpPop;
+$('cp-close').onclick=closeCpPop;
+$('cp-pop').onclick=e=>{ if(e.target===$('cp-pop'))closeCpPop(); };
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('cp-pop').hidden)closeCpPop(); });
 // R/G/B sliders: update hex field + swatch live (no apply to page yet)
 function slidersChanged(){
   const r=+$('cp-r').value,g=+$('cp-g').value,b=+$('cp-b').value;
@@ -738,12 +763,13 @@ $('set-accent-hex').onblur=function(){
            $('cp-swatch').style.background=norm;
            document.querySelectorAll('input[name=set-accent-presets]').forEach(x=>{x.checked=(x.value.toLowerCase()===norm);}); }
 };
-// OK: apply the staged hex to the page immediately (Save persists separately)
+// OK: apply the staged hex to the page immediately, then close the popup (Save persists separately)
 $('set-accent-ok').onclick=function(){
   const hex=pickerGetHex();
   if(!hex)return;
   applyAccent(hex);
   pickerSetHex(hex,false);
+  closeCpPop();
 };
 // helper: read the currently-staged accent hex from modal controls
 function selectedAccentHex(){
