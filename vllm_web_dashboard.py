@@ -324,7 +324,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .header{border:1px solid var(--accent);border-radius:14px;padding:10px 16px;margin-bottom:18px}
 .header .row1{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .header .row2{display:flex;align-items:center;gap:12px;flex-wrap:wrap;color:var(--dim);margin-top:3px}
-.dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);flex:none}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);flex:none;position:relative;top:-1px}
 .dot.off{background:var(--err);box-shadow:0 0 8px var(--err)}
 .st-online{color:var(--accent);font-weight:700}
 .st-offline{color:var(--err);font-weight:700}
