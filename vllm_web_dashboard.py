@@ -289,7 +289,7 @@ def _safe_rate(sampler: Sampler, idx: int) -> Optional[float]:
 PAGE_HTML = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>vllm-monitor · vLLM Health Dashboard</title>
+<title data-i18n-title-tag="title_tag">vllm-monitor · vLLM Health Dashboard</title>
 <style>
 :root{
   --bg:#0b0e14; --panel:#0b0e14; --fg:#d8dee9;
@@ -426,70 +426,70 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 <div class="header">
   <div class="hdr-left">
     <div class="row1">
-      <div class="dot" id="dot" title="Состояние связи с vLLM-сервером. Зелёный = /metrics доступен, красный = сервер недоступен или ошибка опроса."></div>
-      <span class="st-online" id="hdr-status" title="ONLINE — vLLM-сервер отвечает на запросы /metrics. OFFLINE — связь потеряна.">ONLINE</span>
-      <span class="pause-btn" id="pause-btn" title="Пауза/продолжить авто-обновление" tabindex="0"><span class="pb-glyph">&#10074;&#10074;</span></span>
+      <div class="dot" id="dot" data-i18n-title="tip_dot"></div>
+      <span class="st-online" id="hdr-status" data-i18n-title="tip_status">ONLINE</span>
+      <span class="pause-btn" id="pause-btn" tabindex="0"><span class="pb-glyph">&#10074;&#10074;</span></span>
       <span class="sep dim">·</span>
-      <span class="dim" id="url" title="Базовый URL vLLM-сервера, с которого дашборд опрашивает Prometheus-метрики (endpoint /metrics).">—</span>
+      <span class="dim" id="url" data-i18n-title="tip_url">—</span>
       <span class="sep dim">·</span>
-      <span class="dim" title="Интервал опроса vLLM-сервера, в секундах. Каждые N секунд дашборд запрашивает свежие метрики.">refresh <span id="iv">?</span>s</span>
+      <span class="dim" data-i18n-title="tip_interval_hdr">refresh <span id="iv">?</span>s</span>
     </div>
     <div class="row2" id="modelbar">
-      <span class="mono-model" id="model" title="Имя загруженной в vLLM модели. Читается из метрик (лейб model_name), поэтому обновляется автоматически после смены модели.">—</span>
+      <span class="mono-model" id="model" data-i18n-title="tip_model">—</span>
     </div>
   </div>
   <div class="hdr-right">
-    <a href="#" id="settings-btn" title="Открыть настройки (интервал, тема, акцентный цвет)">⚙ настройки</a>
-    <span class="theme-toggle" id="theme-toggle" title="Быстрое переключение темы (светлая/тёмная)" role="button" tabindex="0"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
+    <a href="#" id="settings-btn" data-i18n-title="tip_settings" data-settings-label>⚙ <span data-i18n="set_btn_label">настройки</span></a>
+    <span class="theme-toggle" id="theme-toggle" data-i18n-title="tip_theme_toggle" role="button" tabindex="0"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
   </div>
 </div>
 
 <div class="sec"><div class="sec-label">Load</div>
   <div class="tiles t3">
-    <div class="tile" title="Количество запросов, которые в данный момент активно обрабатываются GPU (prefill + decode). 0 = сервер свободен."><div class="lbl">Running</div><div class="val c-white" id="running">—</div></div>
-    <div class="tile" title="Запросы, ожидающие своей очереди — не хватает VRAM/KV-блоков или GPU занят другими запросами. 0 = свободно, >0 = есть очередь (перегрузка)."><div class="lbl">Queued</div><div class="val c-white" id="waiting">—</div></div>
-    <div class="tile" title="Число запросов, выгруженных из GPU-памяти (preemption) из-за нехватки KV-кэша. 0 = нормально. >0 = KV-кэш переполнен, возможны повторы работы."><div class="lbl">Preemptions</div><div class="val c-white" id="preempted">—</div></div>
+    <div class="tile" data-i18n-title="tip_running"><div class="lbl">Running</div><div class="val c-white" id="running">—</div></div>
+    <div class="tile" data-i18n-title="tip_queued"><div class="lbl">Queued</div><div class="val c-white" id="waiting">—</div></div>
+    <div class="tile" data-i18n-title="tip_preempted"><div class="lbl">Preemptions</div><div class="val c-white" id="preempted">—</div></div>
   </div>
 </div>
 
 <div class="sec"><div class="sec-label">Latency</div>
   <div class="tiles t4">
-    <div class="tile" title="End-to-end: общее время обработки запроса от поступления до последнего токена. Среднее за последний интервал опроса. — = нет активных запросов."><div class="lbl">E2E Latency</div><div class="val" id="e2e">—</div></div>
-    <div class="tile" title="Time-To-First-Token: время от запроса до появления первого сгенерированного токена. Зависит от длины prompt и загрузки."><div class="lbl">TTFT</div><div class="val" id="ttft">—</div></div>
-    <div class="tile" title="Time-Per-Output-Token: среднее время генерации одного токена после первого. Характеристика скорости decode."><div class="lbl">TPOT</div><div class="val" id="tpot">—</div></div>
-    <div class="tile" title="Среднее время, которое запрос проводит в очереди до начала обработки. 0 = не ждал."><div class="lbl">Queue Time</div><div class="val" id="queue">—</div></div>
+    <div class="tile" data-i18n-title="tip_e2e"><div class="lbl">E2E Latency</div><div class="val" id="e2e">—</div></div>
+    <div class="tile" data-i18n-title="tip_ttft"><div class="lbl">TTFT</div><div class="val" id="ttft">—</div></div>
+    <div class="tile" data-i18n-title="tip_tpot"><div class="lbl">TPOT</div><div class="val" id="tpot">—</div></div>
+    <div class="tile" data-i18n-title="tip_queue"><div class="lbl">Queue Time</div><div class="val" id="queue">—</div></div>
   </div>
 </div>
 
 <div class="sec"><div class="sec-label">Throughput &amp; Cache</div>
   <div class="tiles t4">
-    <div class="tile" title="Скорость обработки входных токенов (prefill). Высокое значение при большом prompt — норма."><div class="lbl">Prompt Tokens/s</div><div class="val c-white" id="ptok">—</div></div>
-    <div class="tile" title="Скорость генерации выходных токенов (decode). Основная метрика производительности ответа. 0 = нет активной генерации."><div class="lbl">Gen Tokens/s</div><div class="val c-white" id="gtok">—</div></div>
-    <div class="tile" title="Доля занятых блоков KV-кэша. Близко к 100% = мало места для новых/больших запросов, возможен риск preemptions."><div class="lbl">GPU KV Cache</div><div class="val c-white" id="kv">—</div></div>
-    <div class="tile" title="Доля запросов, попавших в префиксный кэш (повторные одинаковые начальные части prompt). Чем выше, тем быстрее обработка похожих запросов."><div class="lbl">Prefix Cache Hit</div><div class="val c-white" id="pcache">—</div></div>
+    <div class="tile" data-i18n-title="tip_ptok"><div class="lbl">Prompt Tokens/s</div><div class="val c-white" id="ptok">—</div></div>
+    <div class="tile" data-i18n-title="tip_gtok"><div class="lbl">Gen Tokens/s</div><div class="val c-white" id="gtok">—</div></div>
+    <div class="tile" data-i18n-title="tip_kv"><div class="lbl">GPU KV Cache</div><div class="val c-white" id="kv">—</div></div>
+    <div class="tile" data-i18n-title="tip_pcache"><div class="lbl">Prefix Cache Hit</div><div class="val c-white" id="pcache">—</div></div>
   </div>
 </div>
 
 <div class="sec"><div class="sec-label">Stats</div>
   <div class="tiles t3">
-    <div class="tile" title="Speculative Decoding (MTP): доля принятых draft-токенов. Показывает, насколько эффективно спекулятивная генерация ускоряет вывод. '—' если выключено. Внизу — средняя длина принятого фрагмента (tok/step)."><div class="lbl">Spec Accept (MTP)</div>
+    <div class="tile" data-i18n-title="tip_spec"><div class="lbl">Spec Accept (MTP)</div>
       <div class="val sm" id="spec"><span class="l1">—</span><span class="l2" id="spec-sub"></span></div></div>
-    <div class="tile" title="Всего успешно завершённых запросов с момента старта vLLM. Внизу — средняя длина сгенерированного ответа и число ошибок."><div class="lbl">Completed</div>
+    <div class="tile" data-i18n-title="tip_done"><div class="lbl">Completed</div>
       <div class="val sm" id="done"><span class="l1">—</span><span class="l2" id="done-sub"></span></div></div>
-    <div class="tile" title="Средний размер запроса: сколько входных (prompt) и выходных (generation) токенов в типичном запросе, а также средняя скорость генерации и E2E."><div class="lbl">Average Request</div>
+    <div class="tile" data-i18n-title="tip_shape"><div class="lbl">Average Request</div>
       <div class="val sm" id="shape"><span class="l1">—</span><span class="l2" id="shape-sub"></span></div></div>
   </div>
 </div>
 
 <div class="sec"><div class="sec-label">History</div>
   <div class="tiles t3">
-    <div class="tile spark" title="Динамика числа активных (running) запросов за последние ~2 минуты. Пики = всплески нагрузки. Слева y-ось: пик окна сверху, 0 снизу. Внизу текущее значение."><div class="lbl">Active Requests</div>
+    <div class="tile spark" data-i18n-title="tip_hist_active"><div class="lbl">Active Requests</div>
       <div class="plot"><div class="yax"><span id="ax-active-top">0</span><span>0</span></div><div class="bars" id="ch-active"></div></div>
       <div class="cap" id="cap-active">current: 0</div></div>
-    <div class="tile spark" title="Скорость генерации токенов во времени. Плоская линия на 0 = сервер в простое. Пики = активная генерация. Внизу текущее значение."><div class="lbl">Gen Tokens/s</div>
+    <div class="tile spark" data-i18n-title="tip_hist_gen"><div class="lbl">Gen Tokens/s</div>
       <div class="plot"><div class="yax"><span id="ax-gen-top">0</span><span>0</span></div><div class="bars" id="ch-gen"></div></div>
       <div class="cap" id="cap-gen">current: 0.0 tok/s</div></div>
-    <div class="tile spark" title="Использование KV-кэша (%) во времени. Близко к 100% = риск preemptions. Внизу текущее значение."><div class="lbl">GPU Cache %</div>
+    <div class="tile spark" data-i18n-title="tip_hist_kv"><div class="lbl">GPU Cache %</div>
       <div class="plot"><div class="yax"><span id="ax-kv-top">0%</span><span>0</span></div><div class="bars" id="ch-kv"></div></div>
       <div class="cap" id="cap-kv">current: 0.0%</div></div>
   </div>
@@ -498,56 +498,63 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 
 <div class="modal-backdrop" id="settings-modal" hidden>
   <div class="modal">
-    <div class="modal-head">Настройки</div>
+    <div class="modal-head" data-i18n="set_head">Настройки</div>
     <label class="fld">
-      <span class="fld-lbl">Интервал обновления, сек</span>
+      <span class="fld-lbl" data-i18n="set_interval_lbl">Интервал обновления, сек</span>
       <input type="number" id="set-interval" min="1" max="300" step="0.5" />
-      <span class="fld-hint">Как часто дашборд опрашивает vLLM /metrics. Диапазон 1–300 с.</span>
+      <span class="fld-hint" data-i18n="set_interval_hint">Как часто дашборд опрашивает vLLM /metrics. Диапазон 1–300 с.</span>
     </label>
     <div class="fld">
-      <span class="fld-lbl">Тема оформления</span>
+      <span class="fld-lbl" data-i18n="set_theme_lbl">Тема оформления</span>
       <div class="seg" id="set-theme-seg">
-        <label class="seg-opt"><input type="radio" name="set-theme" value="system" /><span>Системная</span></label>
-        <label class="seg-opt"><input type="radio" name="set-theme" value="dark" /><span>Тёмная</span></label>
-        <label class="seg-opt"><input type="radio" name="set-theme" value="light" /><span>Светлая</span></label>
+        <label class="seg-opt"><input type="radio" name="set-theme" value="system" /><span data-i18n="theme_system">Системная</span></label>
+        <label class="seg-opt"><input type="radio" name="set-theme" value="dark" /><span data-i18n="theme_dark">Тёмная</span></label>
+        <label class="seg-opt"><input type="radio" name="set-theme" value="light" /><span data-i18n="theme_light">Светлая</span></label>
       </div>
-      <span class="fld-hint">«Системная» следует за prefers-color-scheme ОС.</span>
+      <span class="fld-hint" data-i18n="set_theme_hint">«Системная» следует за prefers-color-scheme ОС.</span>
     </div>
     <div class="fld">
-      <span class="fld-lbl">Акцентный цвет</span>
+      <span class="fld-lbl" data-i18n="set_lang_lbl">Язык интерфейса</span>
+      <div class="seg" id="set-lang-seg">
+        <label class="seg-opt"><input type="radio" name="set-lang" value="ru" /><span>Русский</span></label>
+        <label class="seg-opt"><input type="radio" name="set-lang" value="en" checked /><span>English</span></label>
+      </div>
+    </div>
+    <div class="fld">
+      <span class="fld-lbl" data-i18n="set_accent_lbl">Акцентный цвет</span>
       <div class="swatches" id="set-accent-swatches">
-        <label class="sw" title="Зелёный"><input type="radio" name="set-accent-presets" value="#3fb950"/><span class="sw-dot" style="--sw:#3fb950"></span></label>
-        <label class="sw" title="Синий"><input type="radio" name="set-accent-presets" value="#58a6ff"/><span class="sw-dot" style="--sw:#58a6ff"></span></label>
-        <label class="sw" title="Фиолетовый"><input type="radio" name="set-accent-presets" value="#bc8cff"/><span class="sw-dot" style="--sw:#bc8cff"></span></label>
-        <label class="sw" title="Оранжевый"><input type="radio" name="set-accent-presets" value="#ffa657"/><span class="sw-dot" style="--sw:#ffa657"></span></label>
-        <label class="sw" title="Красный"><input type="radio" name="set-accent-presets" value="#ff7b72"/><span class="sw-dot" style="--sw:#ff7b72"></span></label>
-        <label class="sw" title="Розовый"><input type="radio" name="set-accent-presets" value="#ff7eb6"/><span class="sw-dot" style="--sw:#ff7eb6"></span></label>
-        <button type="button" class="sw-rc" id="set-accent-open" title="Произвольный цвет (открыть пикер)">
+        <label class="sw" data-i18n-title="sw_green"><input type="radio" name="set-accent-presets" value="#3fb950"/><span class="sw-dot" style="--sw:#3fb950"></span></label>
+        <label class="sw" data-i18n-title="sw_blue"><input type="radio" name="set-accent-presets" value="#58a6ff"/><span class="sw-dot" style="--sw:#58a6ff"></span></label>
+        <label class="sw" data-i18n-title="sw_purple"><input type="radio" name="set-accent-presets" value="#bc8cff"/><span class="sw-dot" style="--sw:#bc8cff"></span></label>
+        <label class="sw" data-i18n-title="sw_orange"><input type="radio" name="set-accent-presets" value="#ffa657"/><span class="sw-dot" style="--sw:#ffa657"></span></label>
+        <label class="sw" data-i18n-title="sw_red"><input type="radio" name="set-accent-presets" value="#ff7b72"/><span class="sw-dot" style="--sw:#ff7b72"></span></label>
+        <label class="sw" data-i18n-title="sw_pink"><input type="radio" name="set-accent-presets" value="#ff7eb6"/><span class="sw-dot" style="--sw:#ff7eb6"></span></label>
+        <button type="button" class="sw-rc" id="set-accent-open" data-i18n-title="sw_custom">
           <span class="sw-rc-ring"></span>
           <span class="sw-rc-center" id="sw-rc-center"></span>
         </button>
       </div>
-      <span class="fld-hint">Цвет рамок, графиков и кнопок.</span>
+      <span class="fld-hint" data-i18n="set_accent_hint">Цвет рамок, графиков и кнопок.</span>
     </div>
     <div class="cp-pop" id="cp-pop" hidden>
       <div class="cp-pop-inner">
-        <div class="cp-pop-head">Произвольный цвет<button type="button" class="cp-x" id="cp-close" title="Закрыть">&times;</button></div>
-        <div class="sv-canvas" id="sv-canvas" title="Высота/насыщенность">
+        <div class="cp-pop-head"><span data-i18n="pop_head">Произвольный цвет</span><button type="button" class="cp-x" id="cp-close" data-i18n-title="pop_close">&times;</button></div>
+        <div class="sv-canvas" id="sv-canvas" data-i18n-title="sv_canvas_tip">
           <div class="sv-cursor" id="sv-cursor"></div>
         </div>
         <div class="cp-row">
-          <input type="text" id="set-accent-hex" class="cp-hex" maxlength="7" spellcheck="false" aria-label="HEX-код цвета" value="#3fb950"/>
+          <input type="text" id="set-accent-hex" class="cp-hex" maxlength="7" spellcheck="false" data-i18n-aria="hex_aria" aria-label="HEX-код цвета" value="#3fb950"/>
           <span class="cp-swatch" id="cp-swatch"></span>
         </div>
         <label class="cp-chan">R<input type="range" id="cp-r" class="cp-range ch-r" min="0" max="255" value="63"/></label>
         <label class="cp-chan">G<input type="range" id="cp-g" class="cp-range ch-g" min="0" max="255" value="185"/></label>
         <label class="cp-chan">B<input type="range" id="cp-b" class="cp-range ch-b" min="0" max="255" value="80"/></label>
-        <button type="button" class="btn" id="set-accent-ok" title="Применить выбранный цвет">OK</button>
+        <button type="button" class="btn" id="set-accent-ok" data-i18n-title="ok_apply">OK</button>
       </div>
     </div>
     <div class="modal-actions">
-      <button class="btn ghost" id="set-cancel">Отмена</button>
-      <button class="btn" id="set-save">Сохранить</button>
+      <button class="btn ghost" id="set-cancel" data-i18n="btn_cancel">Отмена</button>
+      <button class="btn" id="set-save" data-i18n="btn_save">Сохранить</button>
     </div>
     <div class="modal-msg" id="set-msg"></div>
   </div>
@@ -558,6 +565,158 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 const $=id=>document.getElementById(id);
 let auto=true,last=null;
 let curInterval=__INTERVAL__;
+
+/* ---- i18n: RU (default) / EN ---- */
+const I18N={
+ru:{
+tip_dot:'Состояние связи с vLLM-сервером. Зелёный = /metrics доступен, красный = сервер недоступен или ошибка опроса.',
+tip_status:'ONLINE — vLLM-сервер отвечает на запросы /metrics. OFFLINE — связь потеряна.',
+tip_pause_on:'Пауза авто-обновления',
+tip_pause_off:'Возобновить авто-обновление',
+tip_url:'Базовый URL vLLM-сервера, с которого дашборд опрашивает Prometheus-метрики (endpoint /metrics).',
+tip_interval_hdr:'Интервал опроса vLLM-сервера, в секундах. Каждые N секунд дашборд запрашивает свежие метрики.',
+tip_model:'Имя загруженной в vLLM модели. Читается из метрик (лейб model_name), поэтому обновляется автоматически после смены модели.',
+tip_settings:'Открыть настройки (интервал, тема, язык, акцентный цвет)',
+tip_theme_toggle:'Быстрое переключение темы (светлая/тёмная)',
+tip_running:'Количество запросов, которые в данный момент активно обрабатываются GPU (prefill + decode). 0 = сервер свободен.',
+tip_queued:'Запросы, ожидающие своей очереди — не хватает VRAM/KV-блоков или GPU занят другими запросами. 0 = свободно, >0 = есть очередь (перегрузка).',
+tip_preempted:'Число запросов, выгруженных из GPU-памяти (preemption) из-за нехватки KV-кэша. 0 = нормально. >0 = KV-кэш переполнен, возможны повторы работы.',
+tip_e2e:'End-to-end: общее время обработки запроса от поступления до последнего токена. Среднее за последний интервал опроса. — = нет активных запросов.',
+tip_ttft:'Time-To-First-Token: время от запроса до появления первого сгенерированного токена. Зависит от длины prompt и загрузки.',
+tip_tpot:'Time-Per-Output-Token: среднее время генерации одного токена после первого. Характеристика скорости decode.',
+tip_queue:'Среднее время, которое запрос проводит в очереди до начала обработки. 0 = не ждал.',
+tip_ptok:'Скорость обработки входных токенов (prefill). Высокое значение при большом prompt — норма.',
+tip_gtok:'Скорость генерации выходных токенов (decode). Основная метрика производительности ответа. 0 = нет активной генерации.',
+tip_kv:'Доля занятых блоков KV-кэша. Близко к 100% = мало места для новых/больших запросов, возможен риск preemptions.',
+tip_pcache:'Доля запросов, попавших в префиксный кэш (повторные одинаковые начальные части prompt). Чем выше, тем быстрее обработка похожих запросов.',
+tip_spec:"Speculative Decoding (MTP): доля принятых draft-токенов. Показывает, насколько эффективно спекулятивная генерация ускоряет вывод. '—' если выключено. Внизу — средняя длина принятого фрагмента (tok/step).",
+tip_done:'Всего успешно завершённых запросов с момента старта vLLM. Внизу — средняя длина сгенерированного ответа и число ошибок.',
+tip_shape:'Средний размер запроса: сколько входных (prompt) и выходных (generation) токенов в типичном запросе, а также средняя скорость генерации и E2E.',
+tip_hist_active:'Динамика числа активных (running) запросов за последние ~2 минуты. Пики = всплески нагрузки. Слева y-ось: пик окна сверху, 0 снизу. Внизу текущее значение.',
+tip_hist_gen:'Скорость генерации токенов во времени. Плоская линия на 0 = сервер в простое. Пики = активная генерация. Внизу текущее значение.',
+tip_hist_kv:'Использование KV-кэша (%) во времени. Близко к 100% = риск preemptions. Внизу текущее значение.',
+tip_kv_dtype:'Тип данных KV-кэша (precision). Например fp8_e5m2, bf16, fp16. Ниже точность — меньше занимаемой видеопамяти.',
+tip_blks:'Число доступных KV-блоков на GPU. Определяет максимальное количество одновременных запросов / длину контекста.',
+tip_util:'Целевое использование видеопамяти (gpu-memory-utilization). Доля VRAM, которую vLLM резервирует под KV-кэш.',
+mdl_title:'Имя загруженной в vLLM модели (из лейба model_name в метриках).',
+set_btn_label:'настройки',
+set_lang_lbl:'Язык интерфейса',
+sw_green:'Зелёный',
+sw_blue:'Синий',
+sw_purple:'Фиолетовый',
+sw_orange:'Оранжевый',
+sw_red:'Красный',
+sw_pink:'Розовый',
+sw_custom:'Произвольный цвет (открыть пикер)',
+pop_head:'Произвольный цвет',
+pop_close:'Закрыть',
+sv_canvas_tip:'Высота/насыщенность',
+hex_aria:'HEX-код цвета',
+ok_apply:'Применить выбранный цвет',
+set_head:'Настройки',
+set_interval_lbl:'Интервал обновления, сек',
+set_interval_hint:'Как часто дашборд опрашивает vLLM /metrics. Диапазон 1–300 с.',
+set_theme_lbl:'Тема оформления',
+theme_system:'Системная',
+theme_dark:'Тёмная',
+theme_light:'Светлая',
+set_theme_hint:'«Системная» следует за prefers-color-scheme ОС.',
+set_accent_lbl:'Акцентный цвет',
+set_accent_hint:'Цвет рамок, графиков и кнопок.',
+btn_cancel:'Отмена',
+btn_save:'Сохранить',
+msg_saved_prefix:'Сохранено:',
+msg_saved_mid:'с, тема:',
+msg_saved_color:', цвет:',
+msg_saved_suffix:'. Применяется сразу.',
+msg_error_prefix:'Ошибка:',
+msg_net_prefix:'Сеть:',
+msg_interval_invalid:'Интервал должен быть 1–300 сек.',
+title_tag:'vllm-monitor · vLLM Health Dashboard'
+},
+en:{
+tip_dot:'Connection status to the vLLM server. Green = /metrics reachable, red = server unreachable or polling error.',
+tip_status:'ONLINE — the vLLM server responds to /metrics requests. OFFLINE — connection lost.',
+tip_pause_on:'Pause auto-refresh',
+tip_pause_off:'Resume auto-refresh',
+tip_url:'Base URL of the vLLM server whose Prometheus metrics (the /metrics endpoint) the dashboard polls.',
+tip_interval_hdr:'Polling interval for the vLLM server, in seconds. The dashboard fetches fresh metrics every N seconds.',
+tip_model:'Name of the model loaded in vLLM. Read from metrics (model_name label), so it updates automatically after a model swap.',
+tip_settings:'Open settings (interval, theme, language, accent color)',
+tip_theme_toggle:'Quick theme toggle (light/dark)',
+tip_running:'Requests actively being processed on the GPU right now (prefill + decode). 0 = idle server.',
+tip_queued:'Requests waiting in queue — not enough VRAM/KV blocks or the GPU is busy with other requests. 0 = free, >0 = backlog (overload).',
+tip_preempted:'Requests evicted from GPU memory (preemption) due to KV-cache shortage. 0 = healthy. >0 = KV cache is oversubscribed, possible recomputation.',
+tip_e2e:'End-to-end: total time to process a request from arrival to the last token. Mean over the last polling interval. — = no active requests.',
+tip_ttft:'Time-To-First-Token: time from the request until the first generated token appears. Depends on prompt length and load.',
+tip_tpot:'Time-Per-Output-Token: average time to generate one token after the first. Characterizes decode speed.',
+tip_queue:'Average time a request spends in the queue before processing starts. 0 = no wait.',
+tip_ptok:'Rate of input-token processing (prefill). High values with large prompts are normal.',
+tip_gtok:'Rate of output-token generation (decode). The main response-performance metric. 0 = no active generation.',
+tip_kv:'Share of occupied KV-cache blocks. Near 100% = little room for new/large requests, risk of preemptions.',
+tip_pcache:'Share of requests hitting the prefix cache (repeated identical prompt beginnings). Higher = faster handling of similar requests.',
+tip_spec:"Speculative Decoding (MTP): share of accepted draft tokens. Shows how effectively speculative generation speeds up output. '—' when disabled. Below — average accepted fragment length (tok/step).",
+tip_done:'Total successfully completed requests since vLLM started. Below — average generated-response length and error count.',
+tip_shape:'Average request size: typical prompt (input) and generation (output) token counts, plus average generation speed and E2E.',
+tip_hist_active:'Active (running) request count over the last ~2 minutes. Peaks = load spikes. Left y-axis: window peak on top, 0 at bottom. Current value shown below.',
+tip_hist_gen:'Token generation rate over time. Flat line at 0 = server idle. Peaks = active generation. Current value shown below.',
+tip_hist_kv:'KV-cache usage (%) over time. Near 100% = risk of preemptions. Current value shown below.',
+tip_kv_dtype:'KV-cache data type (precision). E.g. fp8_e5m2, bf16, fp16. Lower precision = less video memory used.',
+tip_blks:'Number of available KV blocks on the GPU. Determines the max concurrent requests / context length.',
+tip_util:'Target video-memory utilization (gpu-memory-utilization). The fraction of VRAM vLLM reserves for the KV cache.',
+mdl_title:'Name of the model loaded in vLLM (from the model_name label in metrics).',
+set_btn_label:'settings',
+set_lang_lbl:'Interface language',
+sw_green:'Green',
+sw_blue:'Blue',
+sw_purple:'Purple',
+sw_orange:'Orange',
+sw_red:'Red',
+sw_pink:'Pink',
+sw_custom:'Custom color (open picker)',
+pop_head:'Custom color',
+pop_close:'Close',
+sv_canvas_tip:'Value/saturation',
+hex_aria:'Color HEX code',
+ok_apply:'Apply the selected color',
+set_head:'Settings',
+set_interval_lbl:'Refresh interval, sec',
+set_interval_hint:'How often the dashboard polls vLLM /metrics. Range 1–300 s.',
+set_theme_lbl:'Theme',
+theme_system:'System',
+theme_dark:'Dark',
+theme_light:'Light',
+set_theme_hint:'“System” follows the OS prefers-color-scheme.',
+set_accent_lbl:'Accent color',
+set_accent_hint:'Color of borders, charts and buttons.',
+btn_cancel:'Cancel',
+btn_save:'Save',
+msg_saved_prefix:'Saved:',
+msg_saved_mid:'s, theme:',
+msg_saved_color:', color:',
+msg_saved_suffix:'. Applied immediately.',
+msg_error_prefix:'Error:',
+msg_net_prefix:'Network:',
+msg_interval_invalid:'Interval must be 1–300 seconds.',
+title_tag:'vllm-monitor · vLLM Health Dashboard'
+}};
+let curLang='en';
+function t(key){const d=I18N[curLang]||{};return (key in d)?d[key]:(I18N.en[key]??key);}
+function updateModelBarTips(){
+  const bar=$('modelbar');if(!bar)return;
+  const spans=bar.querySelectorAll('span[data-mtip]');
+  spans.forEach(sp=>{const k=sp.getAttribute('data-mtip');if(k)sp.title=t(k);});
+}
+function applyLang(lang){
+  curLang=(lang in I18N)?lang:'en';
+  document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.dataset.i18n;if(k in (I18N[curLang]||{}))el.textContent=t(k);});
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>{const k=el.dataset.i18nTitle;el.title=t(k);});
+  document.querySelectorAll('[data-i18n-aria]').forEach(el=>{const k=el.dataset.i18nAria;el.setAttribute('aria-label',t(k));});
+  const tt=document.querySelector('[data-i18n-title-tag]');if(tt)document.title=t('title_tag');
+  updatePauseTip();
+  updateModelBarTips();
+}
+function updatePauseTip(){const b=$('pause-btn');if(b)b.title=t(auto?'tip_pause_on':'tip_pause_off');}
 
 /* ---- formatters mirroring the terminal vllm-monitor ---- */
 function fmtCount(n){n=Math.abs(n);
@@ -600,10 +759,10 @@ async function tick(){
     $('url').textContent=d.url||'';
     /* model bar */
     const mb=[];
-    mb.push('<span class="mono-model" title="Имя загруженной в vLLM модели (из лейба model_name в метриках).">'+(d.model_name||'unknown')+'</span>');
-    if(d.kv_dtype)mb.push('<span class="dim" title="Тип данных KV-кэша (precision). Например fp8_e5m2, bf16, fp16. Ниже точность — меньше занимаемой видеопамяти.">kv '+d.kv_dtype+'</span>');
-    if(d.num_blocks)mb.push('<span class="dim" title="Число доступных KV-блоков на GPU. Определяет максимальное количество одновременных запросов / длину контекста.">'+d.num_blocks+' blks</span>');
-    if(d.mem_util!=null)mb.push('<span class="dim" title="Целевое использование видеопамяти (gpu-memory-utilization). Доля VRAM, которую vLLM резервирует под KV-кэш.">util '+Math.round(d.mem_util*100)+'%</span>');
+    mb.push('<span class="mono-model" data-mtip="mdl_title" title="'+t('mdl_title')+'">'+(d.model_name||'unknown')+'</span>');
+    if(d.kv_dtype)mb.push('<span class="dim" data-mtip="tip_kv_dtype" title="'+t('tip_kv_dtype')+'">kv '+d.kv_dtype+'</span>');
+    if(d.num_blocks)mb.push('<span class="dim" data-mtip="tip_blks" title="'+t('tip_blks')+'">'+d.num_blocks+' blks</span>');
+    if(d.mem_util!=null)mb.push('<span class="dim" data-mtip="tip_util" title="'+t('tip_util')+'">util '+Math.round(d.mem_util*100)+'%</span>');
     $('modelbar').innerHTML=mb.join('<span class="sep dim">·</span>');
     /* load */
     setVal('running','c-white',Math.round(d.running||0)+'');
@@ -648,10 +807,10 @@ async function tick(){
 function setAuto(run){
   auto=run;
   const btn=$('pause-btn');
-  if(btn){
+if(btn){
     btn.innerHTML='<span class="pb-glyph'+(run?'':' play')+'">'+(run?'&#10074;&#10074;':'&#9654;')+'</span>';
     btn.classList.toggle('paused',!run);
-    btn.title=run?'Пауза авто-обновления':'Возобновить авто-обновление';
+    btn.title=t(run?'tip_pause_on':'tip_pause_off');
   }
   if(run)loop();
 }
@@ -756,9 +915,11 @@ function themeRadio(val){const r=document.querySelector('input[name=set-theme][v
 
 /* ---- settings modal ---- */
 const modal=$('settings-modal');
+function langRadio(val){const r=document.querySelector('input[name=set-lang][value="'+val+'"]');if(r)r.checked=true;}
 function openSettings(){
   $('set-interval').value=(last&&last.interval)?last.interval:curInterval;
   themeRadio((last&&last.theme)?last.theme:curTheme);
+  langRadio(last&&last.lang?last.lang:curLang);
   accentControlsSync((last&&last.accent)?last.accent:curAccent);
   $('set-msg').textContent='';$('set-msg').className='modal-msg';
   modal.hidden=false;setTimeout(()=>$('set-interval').focus(),30);
@@ -883,23 +1044,25 @@ function selectedAccentHex(){
 }
 $('set-save').onclick=async()=>{
   const v=parseFloat($('set-interval').value);
-  const t=(document.querySelector('input[name=set-theme]:checked')||{}).value||'system';
+  const tv=(document.querySelector('input[name=set-theme]:checked')||{}).value||'system';
+  const lg=(document.querySelector('input[name=set-lang]:checked')||{}).value||curLang;
   const a=selectedAccentHex();
   const msg=$('set-msg');
-  if(isNaN(v)||v<1||v>300){msg.textContent='Интервал должен быть 1–300 сек.';msg.className='modal-msg err';return;}
+  if(isNaN(v)||v<1||v>300){msg.textContent=t('msg_interval_invalid');msg.className='modal-msg err';return;}
   try{
-    const r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({interval:v,theme:t,accent:a})});
+    const r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({interval:v,theme:tv,lang:lg,accent:a})});
     const j=await r.json();
     if(j.ok){
       applyAppearance(j.theme,j.accent);
-      msg.textContent='Сохранено: '+j.interval+' с, тема: '+j.theme+', цвет: '+j.accent+'. Применяется сразу.';msg.className='modal-msg ok';
-      curInterval=j.interval;curTheme=j.theme;curAccent=j.accent;$('iv').textContent=j.interval;
+      if(j.lang)applyLang(j.lang);
+      msg.textContent=t('msg_saved_prefix')+' '+j.interval+' '+t('msg_saved_mid')+' '+j.theme+t('msg_saved_color')+' '+j.accent+t('msg_saved_suffix');msg.className='modal-msg ok';
+      curInterval=j.interval;curTheme=j.theme;curAccent=j.accent;if(j.lang)curLang=j.lang;$('iv').textContent=j.interval;
       setTimeout(closeSettings,900);
-    }else{msg.textContent='Ошибка: '+(j.error||r.status);msg.className='modal-msg err';}
-  }catch(e){msg.textContent='Сеть: '+e.message;msg.className='modal-msg err';}
+    }else{msg.textContent=t('msg_error_prefix')+' '+(j.error||r.status);msg.className='modal-msg err';}
+  }catch(e){msg.textContent=t('msg_net_prefix')+' '+e.message;msg.className='modal-msg err';}
 };
 // apply persisted theme+accent ASAP (before first paint of data)
-fetch('/api/status').then(r=>r.json()).then(d=>applyAppearance(d.theme,d.accent)).catch(()=>{});
+fetch('/api/status').then(r=>r.json()).then(d=>{applyAppearance(d.theme,d.accent);if(d.lang)curLang=d.lang;applyLang(d.lang);}).catch(()=>{});
 loop();
 </script></body></html>
 """
@@ -930,7 +1093,8 @@ class Handler(BaseHTTPRequestHandler):
             payload = {'online': bool(snap), 'ts': time.time(), 'url': self.vllm_url,
                        'interval': self.poll_interval,
                        'theme': settings.get('theme', 'system'),
-                       'accent': settings.get('accent', '#3fb950')}
+                       'accent': settings.get('accent', '#3fb950'),
+                        'lang': settings.get('lang', 'en')}
             if snap:
                 payload.update(snap)
             else:
@@ -955,7 +1119,7 @@ class Handler(BaseHTTPRequestHandler):
             length = int(self.headers.get('Content-Length') or 0)
             body = self.rfile.read(length) if length else b'{}'
             data = json.loads(body.decode('utf-8'))
-            if not any(k in data for k in ('interval', 'theme', 'accent')):
+            if not any(k in data for k in ('interval', 'theme', 'lang', 'accent')):
                 raise ValueError('nothing to update')
             result = {}
             if 'interval' in data:
@@ -973,6 +1137,12 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError('theme must be system, dark or light')
                 save_setting('theme', th)
                 result['theme'] = th
+            if 'lang' in data:
+                lg = data['lang']
+                if lg not in ('ru', 'en'):
+                    raise ValueError('lang must be ru or en')
+                save_setting('lang', lg)
+                result['lang'] = lg
             if 'accent' in data:
                 ac = str(data['accent']).lower()
                 if not re.fullmatch(r'#?[0-9a-f]{6}', ac):
