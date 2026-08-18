@@ -1,0 +1,7 @@
+# runtime logs
+*.log
+# local backups
+*.bak.*
+# pycache
+__pycache__/
+*.pyc
