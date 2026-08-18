@@ -727,9 +727,9 @@ $('settings-btn').onclick=e=>{e.preventDefault();openSettings();};
 $('set-cancel').onclick=closeSettings;
 modal.onclick=e=>{if(e.target===modal)closeSettings();};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!modal.hidden)closeSettings();});
-// preset swatch: fill the custom picker with that hex (but do NOT override slider-sync)
+// preset swatch: fill the custom picker + rainbow center with that hex, clear active-cust
 document.querySelectorAll('input[name=set-accent-presets]').forEach(r=>{
-  r.onchange=()=>{ pickerSetHex(r.value,false); };
+  r.onchange=()=>{ pickerSetHex(r.value,false); rcCenterSet(r.value); };
 });
 // update the rainbow button's center disc + active-cust outline (when hex is not a preset)
 function rcCenterSet(hex){
