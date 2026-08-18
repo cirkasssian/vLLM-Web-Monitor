@@ -297,11 +297,13 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .c-white{color:var(--white)} .c-green{color:var(--green)} .c-yellow{color:var(--warn)}
 .c-red{color:var(--err)} .c-dim{color:var(--dim);font-weight:400}
 /* ---- History: y-axis bar chart, axis on left, bars right, caption below ---- */
+/* override base .tile flex-centering so the plot can stretch full width */
+.tile.spark{display:block}
 .spark{padding:14px 14px 12px}
-.spark .plot{display:flex;gap:10px;align-items:stretch}
-.spark .yax{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;color:var(--dim);font-size:11px;width:auto;min-width:30px;padding-bottom:1px}
-.spark .bars{flex:1;display:flex;align-items:flex-end;gap:1px;height:120px;border-left:1px solid var(--green);padding-left:2px}
-.spark .bar{flex:1;background:var(--green);opacity:.85;min-height:0;transition:height .25s}
+.spark .plot{display:flex;gap:10px;align-items:stretch;width:100%}
+.spark .yax{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;color:var(--dim);font-size:11px;width:auto;min-width:30px;padding-bottom:1px;flex:none}
+.spark .bars{flex:1 1 auto;min-width:0;display:flex;align-items:flex-end;gap:1px;height:120px;border-left:1px solid var(--green);padding-left:2px}
+.spark .bar{flex:1 1 0;background:var(--green);opacity:.85;min-height:0;transition:height .25s}
 .spark .cap{color:var(--dim);font-size:12px;margin-top:10px}
 .footer{margin-top:18px;color:var(--dim);font-size:11px;text-align:center}
 @media (max-width:900px){.t3,.t4{grid-template-columns:1fr 1fr}}
@@ -404,13 +406,14 @@ function paintAxis(el,arr,fmtFn,topId){
   const finite=arr.filter(x=>x!=null&&!isNaN(x)&&isFinite(x));
   const peak=finite.length?Math.max.apply(null,finite):0;
   $(topId).textContent=fmtFn(peak);
-  const cap=Math.ceil(arr.length/28)||1;
-  for(let i=0;i<cap;i++){
+  // one thin column per sample (terminal draws one bar per data point)
+  const frag=document.createDocumentFragment();
+  for(const v of arr){
     const colEl=document.createElement('div');colEl.className='bar';
-    let hv=0;
-    for(let k=i;k<arr.length;k+=cap){hv=Math.max(hv,arr[k]==null||isNaN(arr[k])?0:arr[k]);}
+    const hv=(v==null||isNaN(v))?0:v;
     colEl.style.height=(peak>0?Math.max(0,hv/peak*100):0)+'%';
-    el.appendChild(colEl);}
+    frag.appendChild(colEl);}
+  el.appendChild(frag);
   return peak;}
 
 async function tick(){
