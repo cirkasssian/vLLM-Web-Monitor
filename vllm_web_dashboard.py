@@ -388,6 +388,8 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .cp-pop-head{display:flex;align-items:center;justify-content:space-between;color:var(--fg);font-size:13px;font-weight:700}
 .cp-x{background:transparent;border:none;color:var(--dim);font-size:20px;line-height:1;cursor:pointer;padding:0 2px}
 .cp-x:hover{color:var(--fg)}
+.sv-canvas{position:relative;height:120px;border-radius:8px;cursor:crosshair;background:linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,var(--sv-hue,#f00));touch-action:none}
+.sv-cursor{position:absolute;width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 3px rgba(0,0,0,.5);transform:translate(-50%,-50%);pointer-events:none}
 .cp-row{display:flex;align-items:center;gap:8px}
 .cp-hex{flex:1;min-width:0;background:var(--bg);border:1px solid var(--accent);border-radius:6px;color:var(--fg);font-family:var(--mono);font-size:13px;padding:6px 8px;text-transform:lowercase}
 .cp-hex:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
@@ -516,6 +518,9 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
     <div class="cp-pop" id="cp-pop" hidden>
       <div class="cp-pop-inner">
         <div class="cp-pop-head">Произвольный цвет<button type="button" class="cp-x" id="cp-close" title="Закрыть">&times;</button></div>
+        <div class="sv-canvas" id="sv-canvas" title="Высота/насыщенность">
+          <div class="sv-cursor" id="sv-cursor"></div>
+        </div>
         <div class="cp-row">
           <input type="text" id="set-accent-hex" class="cp-hex" maxlength="7" spellcheck="false" aria-label="HEX-код цвета" value="#3fb950"/>
           <span class="cp-swatch" id="cp-swatch"></span>
@@ -691,6 +696,7 @@ function pickerSetHex(hex,updatePresets){
   $('set-accent-hex').value=hex.toLowerCase();
   $('cp-r').value=r;$('cp-g').value=g;$('cp-b').value=b;
   $('cp-swatch').style.background=hex.toLowerCase();
+  svCursorSet(hex);
   if(updatePresets!==false){
     document.querySelectorAll('input[name=set-accent-presets]').forEach(x=>{
       x.checked=(x.value.toLowerCase()===hex.toLowerCase());
@@ -750,6 +756,59 @@ $('set-accent-open').onclick=openCpPop;
 $('cp-close').onclick=closeCpPop;
 $('cp-pop').onclick=e=>{ if(e.target===$('cp-pop'))closeCpPop(); };
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('cp-pop').hidden)closeCpPop(); });
+let svHue=0;
+// position the SV cursor for a given hex (normalizes hue channel + places dot)
+function svCursorSet(hex){
+  const rgb=hexToRgb(hex);
+  if(!rgb)return;
+  const [r,g,b]=rgb.map(x=>x/255);
+  const max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min;
+  let h=0,s=0,v=max;
+  if(max!==0)s=d/max;
+  if(d!==0){
+    if(max===r)h=((g-b)/d)%6;
+    else if(max===g)h=(b-r)/d+2;
+    else h=(r-g)/d+4;
+    h*=60;if(h<0)h+=360;
+  }
+  svHue=h;
+  $('sv-canvas').style.setProperty('--sv-hue',hsvToHex(h,1,1));
+  const sat=s*100,val=(1-v)*100;
+  const cur=$('sv-cursor');
+  if(cur){cur.style.left=sat+'%';cur.style.top=val+'%';}
+}
+function hsvToHex(h,s,v){
+  h=((h%360)+360)%360;
+  const c=v*s,x=c*(1-Math.abs((h/60)%2-1)),m=v-c;
+  let r=0,g=0,b=0;
+  if(h<60){r=c;g=x;}else if(h<120){r=x;g=c;}
+  else if(h<180){g=c;b=x;}else if(h<240){g=x;b=c;}
+  else if(h<300){r=x;b=c;}else{r=c;b=x;}
+  const to255=t=>Math.round((t+m)*255).toString(16).padStart(2,'0');
+  return '#'+to255(r)+to255(g)+to255(b);
+}
+// pointer events on SV canvas: compute S/V from coords, update sliders/hex/swatch
+function bindSvCanvas(){
+  const cv=$('sv-canvas');
+  const update=e=>{
+    const rect=cv.getBoundingClientRect();
+    const x=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
+    const y=Math.max(0,Math.min(1,(e.clientY-rect.top)/rect.height));
+    const s=x,v=1-y;
+    const hex=hsvToHex(svHue,s,v);
+    const rgb=hexToRgb(hex);
+    $('cp-r').value=rgb[0];$('cp-g').value=rgb[1];$('cp-b').value=rgb[2];
+    $('set-accent-hex').value=hex;
+    $('cp-swatch').style.background=hex;
+    const cur=$('sv-cursor');
+    if(cur){cur.style.left=(s*100)+'%';cur.style.top=((1-v)*100)+'%';}
+    document.querySelectorAll('input[name=set-accent-presets]').forEach(x=>{x.checked=(x.value.toLowerCase()===hex);});
+  };
+  cv.onpointerdown=e=>{if(cv.setPointerCapture)cv.setPointerCapture(e.pointerId);update(e);
+    const mv=ev=>update(ev),up=()=>{cv.removeEventListener('pointermove',mv);cv.removeEventListener('pointerup',up);};
+    cv.addEventListener('pointermove',mv);cv.addEventListener('pointerup',up);};
+}
+bindSvCanvas();
 // R/G/B sliders: update hex field + swatch live (no apply to page yet)
 function slidersChanged(){
   const r=+$('cp-r').value,g=+$('cp-g').value,b=+$('cp-b').value;
@@ -759,6 +818,7 @@ function slidersChanged(){
   document.querySelectorAll('input[name=set-accent-presets]').forEach(x=>{
     x.checked=(x.value.toLowerCase()===hex);
   });
+  svCursorSet(hex);
 }
 ['cp-r','cp-g','cp-b'].forEach(id=>{ $(id).oninput=slidersChanged; });
 // hex field: validate + sync sliders/swatch on blur
