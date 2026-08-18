@@ -632,13 +632,6 @@ $('settings-btn').onclick=e=>{e.preventDefault();openSettings();};
 $('set-cancel').onclick=closeSettings;
 modal.onclick=e=>{if(e.target===modal)closeSettings();};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!modal.hidden)closeSettings();});
-// preview appearance instantly on selection
-document.querySelectorAll('input[name=set-theme]').forEach(r=>{
-  r.onchange=()=>applyTheme(r.value);
-});
-document.querySelectorAll('input[name=set-accent]').forEach(r=>{
-  r.onchange=()=>applyAccent(r.value);
-});
 $('set-save').onclick=async()=>{
   const v=parseFloat($('set-interval').value);
   const t=(document.querySelector('input[name=set-theme]:checked')||{}).value||'system';
