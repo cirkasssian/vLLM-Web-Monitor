@@ -328,12 +328,13 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .dot.off{background:var(--err);box-shadow:0 0 8px var(--err)}
 .st-online{color:var(--accent);font-weight:700}
 .st-offline{color:var(--err);font-weight:700}
-.pause-btn{display:inline-flex;align-items:center;justify-content:center;min-width:0;height:18px;padding:0 1px;margin-left:-3px;position:relative;top:-1px;border-radius:4px;color:var(--accent);cursor:pointer;user-select:none;font-size:10px;letter-spacing:-1px;line-height:1}
+.pause-btn{display:inline-flex;align-items:center;justify-content:center;min-width:12px;height:18px;padding:0 1px;margin-left:-10px;position:relative;top:-1px;border-radius:4px;color:var(--accent);cursor:pointer;user-select:none;font-size:10px;letter-spacing:-1px;line-height:1}
 .pause-btn::before{content:'';position:absolute;left:-8px;right:-8px;top:-6px;bottom:-6px}
 .pause-btn:hover{background:var(--border)}
 .pause-btn:focus{outline:none}
 .pause-btn:focus-visible{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
 .pause-btn.paused{color:var(--warn)}
+.pb-glyph{display:inline-block;line-height:1}
 .dim{color:var(--dim)}
 .mono-model{color:var(--cyan);font-weight:700}
 .sep{color:var(--dim)}
@@ -403,7 +404,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
   <div class="row1">
     <div class="dot" id="dot" title="Состояние связи с vLLM-сервером. Зелёный = /metrics доступен, красный = сервер недоступен или ошибка опроса."></div>
     <span class="st-online" id="hdr-status" title="ONLINE — vLLM-сервер отвечает на запросы /metrics. OFFLINE — связь потеряна.">ONLINE</span>
-    <span class="pause-btn" id="pause-btn" title="Пауза/продолжить авто-обновление" tabindex="0">&#10074;&#10074;</span>
+    <span class="pause-btn" id="pause-btn" title="Пауза/продолжить авто-обновление" tabindex="0"><span class="pb-glyph">&#10074;&#10074;</span></span>
     <span class="sep dim">·</span>
     <span class="dim" id="url" title="Базовый URL vLLM-сервера, с которого дашборд опрашивает Prometheus-метрики (endpoint /metrics).">—</span>
     <span class="sep dim">·</span>
@@ -605,7 +606,7 @@ function setAuto(run){
   auto=run;
   const btn=$('pause-btn');
   if(btn){
-    btn.innerHTML=run?'&#10074;&#10074;':'&#9654;';
+    btn.innerHTML='<span class="pb-glyph'+(run?'':' play')+'">'+(run?'&#10074;&#10074;':'&#9654;')+'</span>';
     btn.classList.toggle('paused',!run);
     btn.title=run?'Пауза авто-обновления':'Возобновить авто-обновление';
   }
