@@ -5,3 +5,6 @@
 # pycache
 __pycache__/
 *.pyc
+
+# runtime settings (written by the dashboard UI)
+config.json
