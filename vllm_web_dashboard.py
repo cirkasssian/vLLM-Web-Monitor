@@ -328,7 +328,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .dot.off{background:var(--err);box-shadow:0 0 8px var(--err)}
 .st-online{color:var(--accent);font-weight:700}
 .st-offline{color:var(--err);font-weight:700}
-.pause-btn{display:inline-flex;align-items:center;justify-content:center;min-width:12px;height:18px;padding:0 1px;margin-left:-10px;position:relative;top:-1px;border-radius:4px;color:var(--accent);cursor:pointer;user-select:none;font-size:10px;letter-spacing:-1px;line-height:1}
+.pause-btn{display:inline-flex;align-items:center;justify-content:center;min-width:12px;height:18px;padding:0 1px;margin-left:-2px;position:relative;top:-1px;border-radius:4px;color:var(--accent);cursor:pointer;user-select:none;font-size:10px;letter-spacing:-1px;line-height:1}
 .pause-btn::before{content:'';position:absolute;left:-8px;right:-8px;top:-6px;bottom:-6px}
 .pause-btn:hover{background:var(--border)}
 .pause-btn:focus{outline:none}
