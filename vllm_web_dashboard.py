@@ -793,7 +793,7 @@ async function tick(){
     paintAxis($('ch-kv'),h.kv_pct||[],x=>Math.round(x)+'%','ax-kv-top');
     $('cap-kv').textContent='current: '+((d.kv_usage||0)*100).toFixed(1)+'%';
     last=d;
-  }catch(e){$('hdr-status').textContent='ERROR';$('hdr-status').className='st-offline';$('dot').className='dot off';}
+  }catch(e){$('hdr-status').textContent='OFFLINE';$('hdr-status').className='st-offline';$('dot').className='dot off';}
 }
 function setAuto(run){
   auto=run;
