@@ -382,6 +382,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .sw-dot-custom{display:block;width:26px;height:26px;border-radius:50%;background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red);border:2px solid transparent;box-shadow:0 0 0 2px var(--bg) inset;overflow:hidden}
 .sw-dot-custom::after{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--accent)}
 .sw-custom.active .sw-dot-custom{border-color:var(--fg);transform:scale(1.08)}
+.btn.mini{padding:4px 12px;font-size:12px;align-self:center}
 .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
 .btn{background:var(--accent);color:#0b0e14;border:none;border-radius:6px;padding:8px 16px;font-family:var(--mono);font-size:13px;font-weight:700;cursor:pointer}
 .btn:hover{filter:brightness(1.1)}
@@ -492,8 +493,9 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
           <input type="color" id="set-accent-picker" value="#3fb950"/>
           <span class="sw-dot sw-dot-custom" id="picker-dot"></span>
         </label>
+        <button type="button" class="btn mini" id="set-accent-ok" title="Применить выбранный цвет">OK</button>
       </div>
-      <span class="fld-hint">Цвет рамок, графиков, разделов и кнопок. Капля справа — произвольный цвет.</span>
+      <span class="fld-hint">Цвет рамок, графиков, разделов и кнопок. Капля справа — произвольный цвет, OK фиксирует выбор.</span>
     </div>
     <div class="modal-actions">
       <button class="btn ghost" id="set-cancel">Отмена</button>
@@ -683,10 +685,22 @@ document.querySelectorAll('input[name=set-accent-presets]').forEach(r=>{
     if(cu)cu.classList.remove('active');
   };
 });
-// custom picker clears preset radios and marks itself active
+// custom picker clears preset radios and marks itself active (pending, not applied)
 $('set-accent-picker').oninput=function(){
   document.querySelectorAll('input[name=set-accent-presets]').forEach(x=>x.checked=false);
   this.closest('.sw-custom').classList.add('active');
+};
+// OK confirms the picked color: applies it to the page immediately and clears pending.
+// The shared "Save" button additionally persists it to config.json.
+$('set-accent-ok').onclick=function(){
+  const hex=$('set-accent-picker').value;
+  if(!/^#[0-9a-fA-F]{6}$/.test(hex))return;
+  applyAccent(hex);
+  const cu=$('set-accent-picker').closest('.sw-custom');
+  if(cu)cu.classList.remove('active');
+  document.querySelectorAll('input[name=set-accent-presets]').forEach(x=>{
+    x.checked=(x.value.toLowerCase()===hex.toLowerCase());
+  });
 };
 // helper: read the currently-selected accent hex from modal controls
 function selectedAccentHex(){
