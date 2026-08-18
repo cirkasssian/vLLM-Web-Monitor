@@ -328,7 +328,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .dot.off{background:var(--err);box-shadow:0 0 8px var(--err)}
 .st-online{color:var(--accent);font-weight:700}
 .st-offline{color:var(--err);font-weight:700}
-.pause-btn{display:inline-flex;align-items:center;justify-content:center;min-width:0;height:18px;padding:0 1px;margin-left:-3px;border-radius:4px;color:var(--accent);cursor:pointer;user-select:none;font-size:10px;letter-spacing:-1px;line-height:1;border:1px solid transparent}
+.pause-btn{display:inline-flex;align-items:center;justify-content:center;min-width:0;height:18px;padding:0 1px;margin-left:-3px;position:relative;top:-1px;border-radius:4px;color:var(--accent);cursor:pointer;user-select:none;font-size:10px;letter-spacing:-1px;line-height:1;border:1px solid transparent}
 .pause-btn:hover{background:var(--border);border-color:var(--border)}
 .pause-btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .pause-btn.paused{color:var(--warn)}
