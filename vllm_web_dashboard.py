@@ -310,9 +310,13 @@ PAGE_HTML = """<!doctype html>
 body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px;line-height:1.35;padding:18px}
 .wrap{max-width:1500px;margin:0 auto}
 /* ---- Header (two rows, rounded box, title top-left) ---- */
-.header{border:1px solid var(--accent);border-radius:14px;padding:10px 16px;margin-bottom:18px}
+.header{border:1px solid var(--accent);border-radius:14px;padding:10px 16px;margin-bottom:18px;display:flex;align-items:stretch;justify-content:space-between;gap:16px}
+.hdr-left{flex:1 1 auto;min-width:0}
 .header .row1{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .header .row2{display:flex;align-items:center;gap:12px;flex-wrap:wrap;color:var(--dim);margin-top:3px}
+.hdr-right{display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-end;line-height:1.3;flex:none}
+.hdr-right a{color:var(--accent);cursor:pointer;text-decoration:none;font-weight:700;font-size:14px}
+.hdr-right a:hover{text-decoration:underline}
 .dot{width:9px;height:9px;border-radius:50%;background:#3fb950;box-shadow:0 0 8px #3fb950;flex:none;position:relative;top:-1px}
 .dot.off{background:#ff6b6b;box-shadow:0 0 8px #ff6b6b}
 .st-online{color:var(--accent);font-weight:700}
@@ -415,17 +419,22 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 <div class="wrap">
 
 <div class="header">
-  <div class="row1">
-    <div class="dot" id="dot" title="Состояние связи с vLLM-сервером. Зелёный = /metrics доступен, красный = сервер недоступен или ошибка опроса."></div>
-    <span class="st-online" id="hdr-status" title="ONLINE — vLLM-сервер отвечает на запросы /metrics. OFFLINE — связь потеряна.">ONLINE</span>
-    <span class="pause-btn" id="pause-btn" title="Пауза/продолжить авто-обновление" tabindex="0"><span class="pb-glyph">&#10074;&#10074;</span></span>
-    <span class="sep dim">·</span>
-    <span class="dim" id="url" title="Базовый URL vLLM-сервера, с которого дашборд опрашивает Prometheus-метрики (endpoint /metrics).">—</span>
-    <span class="sep dim">·</span>
-    <span class="dim" title="Интервал опроса vLLM-сервера, в секундах. Каждые N секунд дашборд запрашивает свежие метрики.">refresh <span id="iv">?</span>s</span>
+  <div class="hdr-left">
+    <div class="row1">
+      <div class="dot" id="dot" title="Состояние связи с vLLM-сервером. Зелёный = /metrics доступен, красный = сервер недоступен или ошибка опроса."></div>
+      <span class="st-online" id="hdr-status" title="ONLINE — vLLM-сервер отвечает на запросы /metrics. OFFLINE — связь потеряна.">ONLINE</span>
+      <span class="pause-btn" id="pause-btn" title="Пауза/продолжить авто-обновление" tabindex="0"><span class="pb-glyph">&#10074;&#10074;</span></span>
+      <span class="sep dim">·</span>
+      <span class="dim" id="url" title="Базовый URL vLLM-сервера, с которого дашборд опрашивает Prometheus-метрики (endpoint /metrics).">—</span>
+      <span class="sep dim">·</span>
+      <span class="dim" title="Интервал опроса vLLM-сервера, в секундах. Каждые N секунд дашборд запрашивает свежие метрики.">refresh <span id="iv">?</span>s</span>
+    </div>
+    <div class="row2" id="modelbar">
+      <span class="mono-model" id="model" title="Имя загруженной в vLLM модели. Читается из метрик (лейб model_name), поэтому обновляется автоматически после смены модели.">—</span>
+    </div>
   </div>
-  <div class="row2" id="modelbar">
-    <span class="mono-model" id="model" title="Имя загруженной в vLLM модели. Читается из метрик (лейб model_name), поэтому обновляется автоматически после смены модели.">—</span>
+  <div class="hdr-right">
+    <a href="#" id="settings-btn" title="Открыть настройки (интервал, тема, акцентный цвет)">⚙ настройки</a>
   </div>
 </div>
 
@@ -480,7 +489,6 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
   </div>
 </div>
 
-<div class="footer">updates every <span id="iv2">?</span>s · <a href="#" id="settings-btn" title="Открыть настройки (интервал, тема, акцентный цвет)">⚙ настройки</a></div>
 
 <div class="modal-backdrop" id="settings-modal" hidden>
   <div class="modal">
@@ -648,7 +656,7 @@ function setAuto(run){
 }
 $('pause-btn').onclick=()=>setAuto(!auto);
 $('pause-btn').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setAuto(!auto);}};
-$('iv').textContent=curInterval;$('iv2').textContent=curInterval;
+$('iv').textContent=curInterval;
 function loop(){if(!auto)return;tick().then(()=>setTimeout(loop,curInterval*1000));}
 
 /* ---- appearance: theme + accent (accent is any hex) ---- */
@@ -858,7 +866,7 @@ $('set-save').onclick=async()=>{
     if(j.ok){
       applyAppearance(j.theme,j.accent);
       msg.textContent='Сохранено: '+j.interval+' с, тема: '+j.theme+', цвет: '+j.accent+'. Применяется сразу.';msg.className='modal-msg ok';
-      curInterval=j.interval;curTheme=j.theme;curAccent=j.accent;$('iv').textContent=j.interval;$('iv2').textContent=j.interval;
+      curInterval=j.interval;curTheme=j.theme;curAccent=j.accent;$('iv').textContent=j.interval;
       setTimeout(closeSettings,900);
     }else{msg.textContent='Ошибка: '+(j.error||r.status);msg.className='modal-msg err';}
   }catch(e){msg.textContent='Сеть: '+e.message;msg.className='modal-msg err';}
