@@ -300,8 +300,8 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 /* override base .tile flex-centering so the plot can stretch full width */
 .tile.spark{display:block}
 .spark{padding:14px 14px 12px}
-.spark .plot{display:flex;gap:10px;align-items:stretch;width:100%}
-.spark .yax{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;color:var(--dim);font-size:11px;width:auto;min-width:30px;padding-bottom:1px;flex:none}
+.spark .plot{display:flex;gap:6px;align-items:stretch;width:100%}
+.spark .yax{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;color:var(--dim);font-size:11px;width:auto;min-width:20px;padding-bottom:1px;flex:none}
 .spark .bars{flex:1 1 auto;min-width:0;display:flex;align-items:flex-end;gap:1px;height:120px;border-left:1px solid var(--green);padding-left:2px}
 .spark .bar{flex:1 1 0;background:var(--green);opacity:.85;min-height:0;transition:height .25s}
 .spark .cap{color:var(--dim);font-size:12px;margin-top:10px}
