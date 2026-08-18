@@ -295,7 +295,14 @@ PAGE_HTML = """<!doctype html>
   --bg:#0b0e14; --panel:#0b0e14; --border:#3fb950; --fg:#d8dee9;
   --dim:#5e6a7e; --accent:#3fb950; --white:#ffffff;
   --green:#3fb950; --cyan:#56d4dd; --ok:#3fb950; --warn:#ffd166; --err:#ff6b6b;
+  --shadow:rgba(0,0,0,.5);
   --mono:'JetBrains Mono','SF Mono',Menlo,Consolas,'DejaVu Sans Mono',monospace;
+}
+[data-theme="light"]{
+  --bg:#f4f6f8; --panel:#ffffff; --border:#2ea043; --fg:#1b2733;
+  --dim:#6b7785; --accent:#2ea043; --white:#0b1220;
+  --green:#1f8a3b; --cyan:#0e7490; --ok:#1f8a3b; --warn:#b7791f; --err:#d64545;
+  --shadow:rgba(0,0,0,.15);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px;line-height:1.35;padding:18px}
@@ -347,6 +354,14 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .fld input[type=number]{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--fg);font-family:var(--mono);font-size:14px;padding:8px 10px}
 .fld input:focus{outline:none;border-color:var(--accent,var(--green))}
 .fld-hint{display:block;color:var(--dim);font-size:11px;margin-top:5px}
+.seg{display:flex;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:3px}
+.seg-opt{flex:1;position:relative}
+.seg-opt input{position:absolute;opacity:0;pointer-events:none}
+.seg-opt span{display:block;text-align:center;padding:6px 4px;border-radius:6px;color:var(--dim);font-size:12px;cursor:pointer;user-select:none}
+.seg-opt input:checked+span{background:var(--green);color:var(--bg);font-weight:700}
+[data-theme="light"] .seg-opt input:checked+span{color:#fff}
+.seg-opt span:hover{color:var(--fg)}
+.seg-opt input:checked+span:hover{color:inherit}
 .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
 .btn{background:var(--green);color:#0b0e14;border:none;border-radius:6px;padding:8px 16px;font-family:var(--mono);font-size:13px;font-weight:700;cursor:pointer}
 .btn:hover{filter:brightness(1.1)}
@@ -434,6 +449,15 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
       <input type="number" id="set-interval" min="1" max="300" step="0.5" />
       <span class="fld-hint">Как часто дашборд опрашивает vLLM /metrics. Диапазон 1–300 с.</span>
     </label>
+    <div class="fld">
+      <span class="fld-lbl">Тема оформления</span>
+      <div class="seg" id="set-theme-seg">
+        <label class="seg-opt"><input type="radio" name="set-theme" value="system" /><span>Как в системе</span></label>
+        <label class="seg-opt"><input type="radio" name="set-theme" value="dark" /><span>Тёмная</span></label>
+        <label class="seg-opt"><input type="radio" name="set-theme" value="light" /><span>Светлая</span></label>
+      </div>
+      <span class="fld-hint">«Как в системе» следует за prefers-color-scheme ОС.</span>
+    </div>
     <div class="modal-actions">
       <button class="btn ghost" id="set-cancel">Отмена</button>
       <button class="btn" id="set-save">Сохранить</button>
@@ -543,10 +567,22 @@ $('dot').onclick=()=>{auto=!auto;if(auto)loop();};
 $('iv').textContent=curInterval;$('iv2').textContent=curInterval;
 function loop(){if(!auto)return;tick().then(()=>setTimeout(loop,curInterval*1000));}
 
+/* ---- theme ---- */
+let curTheme='system';
+const mqDark=window.matchMedia('(prefers-color-scheme: dark)');
+function applyTheme(mode){
+  curTheme=mode;
+  const eff=(mode==='light')?'light':(mode==='dark')?'dark':(mqDark.matches?'dark':'light');
+  document.documentElement.setAttribute('data-theme',eff);
+}
+mqDark.addEventListener('change',()=>{if(curTheme==='system')applyTheme('system');});
+function themeRadio(val){const r=document.querySelector('input[name=set-theme][value="'+val+'"]');if(r)r.checked=true;}
+
 /* ---- settings modal ---- */
 const modal=$('settings-modal');
 function openSettings(){
   $('set-interval').value=(last&&last.interval)?last.interval:curInterval;
+  themeRadio((last&&last.theme)?last.theme:curTheme);
   $('set-msg').textContent='';$('set-msg').className='modal-msg';
   modal.hidden=false;setTimeout(()=>$('set-interval').focus(),30);
 }
@@ -555,20 +591,28 @@ $('settings-btn').onclick=e=>{e.preventDefault();openSettings();};
 $('set-cancel').onclick=closeSettings;
 modal.onclick=e=>{if(e.target===modal)closeSettings();};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!modal.hidden)closeSettings();});
+// preview theme instantly on selection
+document.querySelectorAll('input[name=set-theme]').forEach(r=>{
+  r.onchange=()=>applyTheme(r.value);
+});
 $('set-save').onclick=async()=>{
   const v=parseFloat($('set-interval').value);
+  const t=(document.querySelector('input[name=set-theme]:checked')||{}).value||'system';
   const msg=$('set-msg');
   if(isNaN(v)||v<1||v>300){msg.textContent='Интервал должен быть 1–300 сек.';msg.className='modal-msg err';return;}
   try{
-    const r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({interval:v})});
+    const r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({interval:v,theme:t})});
     const j=await r.json();
     if(j.ok){
-      msg.textContent='Сохранено: '+j.interval+' с. Применяется сразу.';msg.className='modal-msg ok';
-      curInterval=j.interval;$('iv').textContent=j.interval;$('iv2').textContent=j.interval;
+      applyTheme(j.theme);
+      msg.textContent='Сохранено: '+j.interval+' с, тема: '+j.theme+'. Применяется сразу.';msg.className='modal-msg ok';
+      curInterval=j.interval;curTheme=j.theme;$('iv').textContent=j.interval;$('iv2').textContent=j.interval;
       setTimeout(closeSettings,900);
     }else{msg.textContent='Ошибка: '+(j.error||r.status);msg.className='modal-msg err';}
   }catch(e){msg.textContent='Сеть: '+e.message;msg.className='modal-msg err';}
 };
+// apply persisted theme ASAP (before first paint of data)
+fetch('/api/status').then(r=>r.json()).then(d=>{if(d.theme)applyTheme(d.theme);}).catch(()=>{});
 loop();
 </script></body></html>
 """
@@ -596,7 +640,8 @@ class Handler(BaseHTTPRequestHandler):
         elif self.path == '/api/status':
             snap = self.sampler.current()
             payload = {'online': bool(snap), 'ts': time.time(), 'url': self.vllm_url,
-                       'interval': self.poll_interval}
+                       'interval': self.poll_interval,
+                       'theme': load_settings().get('theme', 'system')}
             if snap:
                 payload.update(snap)
             else:
@@ -621,20 +666,28 @@ class Handler(BaseHTTPRequestHandler):
             length = int(self.headers.get('Content-Length') or 0)
             body = self.rfile.read(length) if length else b'{}'
             data = json.loads(body.decode('utf-8'))
-            interval = data.get('interval')
-            if interval is None:
-                raise ValueError('missing interval')
-            iv = float(interval)
-            if not (1.0 <= iv <= 300.0):
-                raise ValueError('interval must be 1..300 seconds')
-            save_setting('interval', iv)
-            with Handler.interval_cv:
-                Handler.poll_interval = iv
-                Handler.interval_cv.notify_all()
+            if 'interval' not in data and 'theme' not in data:
+                raise ValueError('nothing to update')
+            result = {}
+            if 'interval' in data:
+                iv = float(data['interval'])
+                if not (1.0 <= iv <= 300.0):
+                    raise ValueError('interval must be 1..300 seconds')
+                save_setting('interval', iv)
+                with Handler.interval_cv:
+                    Handler.poll_interval = iv
+                    Handler.interval_cv.notify_all()
+                result['interval'] = iv
+            if 'theme' in data:
+                th = data['theme']
+                if th not in ('system', 'dark', 'light'):
+                    raise ValueError('theme must be system, dark or light')
+                save_setting('theme', th)
+                result['theme'] = th
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
-            self.wfile.write(json.dumps({'ok': True, 'interval': iv}).encode())
+            self.wfile.write(json.dumps({'ok': True, **result}).encode())
         except Exception as e:
             self.send_response(400)
             self.send_header('Content-Type', 'application/json')
