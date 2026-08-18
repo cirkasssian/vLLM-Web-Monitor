@@ -380,7 +380,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .sw-rc{position:relative;width:26px;height:26px;border-radius:50%;border:none;padding:0;cursor:pointer;background:transparent}
 .sw-rc-ring{display:block;width:26px;height:26px;border-radius:50%;background:conic-gradient(#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);box-shadow:0 0 0 2px var(--bg) inset}
 .sw-rc:hover .sw-rc-ring{filter:brightness(1.12)}
-.sw-rc-center{position:absolute;inset:7px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
+.sw-rc-center{position:absolute;inset:5px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
 .cp-pop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:60}
 .cp-pop[hidden]{display:none}
 .cp-pop-inner{background:var(--panel);border:1px solid var(--accent);border-radius:10px;padding:14px 16px;width:min(280px,90vw);box-shadow:0 10px 40px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:10px}
