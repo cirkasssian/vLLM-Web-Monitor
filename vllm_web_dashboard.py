@@ -313,64 +313,64 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 
 <div class="header">
   <div class="row1">
-    <div class="dot" id="dot"></div>
-    <span class="st-online" id="hdr-status">ONLINE</span>
+    <div class="dot" id="dot" title="Состояние связи с vLLM-сервером. Зелёный = /metrics доступен, красный = сервер недоступен или ошибка опроса."></div>
+    <span class="st-online" id="hdr-status" title="ONLINE — vLLM-сервер отвечает на запросы /metrics. OFFLINE — связь потеряна.">ONLINE</span>
     <span class="sep dim">·</span>
-    <span class="dim" id="url">—</span>
+    <span class="dim" id="url" title="Базовый URL vLLM-сервера, с которого дашборд опрашивает Prometheus-метрики (endpoint /metrics).">—</span>
     <span class="sep dim">·</span>
-    <span class="dim">refresh <span id="iv">?</span>s</span>
+    <span class="dim" title="Интервал опроса vLLM-сервера, в секундах. Каждые N секунд дашборд запрашивает свежие метрики.">refresh <span id="iv">?</span>s</span>
   </div>
   <div class="row2" id="modelbar">
-    <span class="mono-model" id="model">—</span>
+    <span class="mono-model" id="model" title="Имя загруженной в vLLM модели. Читается из метрик (лейб model_name), поэтому обновляется автоматически после смены модели.">—</span>
   </div>
 </div>
 
 <div class="sec"><div class="sec-label">Load</div>
   <div class="tiles t3">
-    <div class="tile"><div class="lbl">Running</div><div class="val c-white" id="running">—</div></div>
-    <div class="tile"><div class="lbl">Queued</div><div class="val c-green" id="waiting">—</div></div>
-    <div class="tile"><div class="lbl">Preemptions</div><div class="val c-green" id="preempted">—</div></div>
+    <div class="tile" title="Количество запросов, которые в данный момент активно обрабатываются GPU (prefill + decode). 0 = сервер свободен."><div class="lbl">Running</div><div class="val c-white" id="running">—</div></div>
+    <div class="tile" title="Запросы, ожидающие своей очереди — не хватает VRAM/KV-блоков или GPU занят другими запросами. Зеленый = пусто, желтый = есть очередь (перегрузка)."><div class="lbl">Queued</div><div class="val c-green" id="waiting">—</div></div>
+    <div class="tile" title="Число запросов, выгруженных из GPU-памяти (preemption) из-за нехватки KV-кэша. 0 = нормально. >0 = KV-кэш переполнен, возможны повторы работы."><div class="lbl">Preemptions</div><div class="val c-green" id="preempted">—</div></div>
   </div>
 </div>
 
 <div class="sec"><div class="sec-label">Latency</div>
   <div class="tiles t4">
-    <div class="tile"><div class="lbl">E2E Latency</div><div class="val" id="e2e">—</div></div>
-    <div class="tile"><div class="lbl">TTFT</div><div class="val" id="ttft">—</div></div>
-    <div class="tile"><div class="lbl">TPOT</div><div class="val" id="tpot">—</div></div>
-    <div class="tile"><div class="lbl">Queue Time</div><div class="val" id="queue">—</div></div>
+    <div class="tile" title="End-to-end: общее время обработки запроса от поступления до последнего токена. Среднее за последний интервал опроса. — = нет активных запросов."><div class="lbl">E2E Latency</div><div class="val" id="e2e">—</div></div>
+    <div class="tile" title="Time-To-First-Token: время от запроса до появления первого сгенерированного токена. Зависит от длины prompt и загрузки."><div class="lbl">TTFT</div><div class="val" id="ttft">—</div></div>
+    <div class="tile" title="Time-Per-Output-Token: среднее время генерации одного токена после первого. Характеристика скорости decode."><div class="lbl">TPOT</div><div class="val" id="tpot">—</div></div>
+    <div class="tile" title="Среднее время, которое запрос проводит в очереди до начала обработки. 0 = не ждал."><div class="lbl">Queue Time</div><div class="val" id="queue">—</div></div>
   </div>
 </div>
 
 <div class="sec"><div class="sec-label">Throughput &amp; Cache</div>
   <div class="tiles t4">
-    <div class="tile"><div class="lbl">Prompt Tokens/s</div><div class="val c-white" id="ptok">—</div></div>
-    <div class="tile"><div class="lbl">Gen Tokens/s</div><div class="val c-white" id="gtok">—</div></div>
-    <div class="tile"><div class="lbl">GPU KV Cache</div><div class="val c-green" id="kv">—</div></div>
-    <div class="tile"><div class="lbl">Prefix Cache Hit</div><div class="val c-white" id="pcache">—</div></div>
+    <div class="tile" title="Скорость обработки входных токенов (prefill). Высокое значение при большом prompt — норма."><div class="lbl">Prompt Tokens/s</div><div class="val c-white" id="ptok">—</div></div>
+    <div class="tile" title="Скорость генерации выходных токенов (decode). Основная метрика производительности ответа. 0 = нет активной генерации."><div class="lbl">Gen Tokens/s</div><div class="val c-white" id="gtok">—</div></div>
+    <div class="tile" title="Доля занятых блоков KV-кэша. Зеленый <80%, желтый 80–95%, красный ≥95%. Высокое значение = мало места для новых/больших запросов."><div class="lbl">GPU KV Cache</div><div class="val c-green" id="kv">—</div></div>
+    <div class="tile" title="Доля запросов, попавших в префиксный кэш (повторные одинаковые начальные части prompt). Чем выше, тем быстрее обработка похожих запросов."><div class="lbl">Prefix Cache Hit</div><div class="val c-white" id="pcache">—</div></div>
   </div>
 </div>
 
 <div class="sec"><div class="sec-label">Stats</div>
   <div class="tiles t3">
-    <div class="tile"><div class="lbl">Spec Accept (MTP)</div>
+    <div class="tile" title="Speculative Decoding (MTP): доля принятых draft-токенов. Показывает, насколько эффективно спекулятивная генерация ускоряет вывод. '—' если выключено. Внизу — средняя длина принятого фрагмента (tok/step)."><div class="lbl">Spec Accept (MTP)</div>
       <div class="val sm" id="spec"><span class="l1">—</span><span class="l2" id="spec-sub"></span></div></div>
-    <div class="tile"><div class="lbl">Completed</div>
+    <div class="tile" title="Всего успешно завершённых запросов с момента старта vLLM. Внизу — средняя длина сгенерированного ответа и число ошибок."><div class="lbl">Completed</div>
       <div class="val sm" id="done"><span class="l1">—</span><span class="l2" id="done-sub"></span></div></div>
-    <div class="tile"><div class="lbl">Average Request</div>
+    <div class="tile" title="Средний размер запроса: сколько входных (prompt) и выходных (generation) токенов в типичном запросе, а также средняя скорость генерации и E2E."><div class="lbl">Average Request</div>
       <div class="val sm" id="shape"><span class="l1">—</span><span class="l2" id="shape-sub"></span></div></div>
   </div>
 </div>
 
 <div class="sec"><div class="sec-label">History</div>
   <div class="tiles t3">
-    <div class="tile spark"><div class="lbl">Active Requests</div>
+    <div class="tile spark" title="Динамика числа активных (running) запросов за последние ~2 минуты. Пики = всплески нагрузки. Слева y-ось: пик окна сверху, 0 снизу. Внизу текущее значение."><div class="lbl">Active Requests</div>
       <div class="plot"><div class="yax"><span id="ax-active-top">0</span><span>0</span></div><div class="bars" id="ch-active"></div></div>
       <div class="cap" id="cap-active">current: 0</div></div>
-    <div class="tile spark"><div class="lbl">Gen Tokens/s</div>
+    <div class="tile spark" title="Скорость генерации токенов во времени. Плоская линия на 0 = сервер в простое. Пики = активная генерация. Внизу текущее значение."><div class="lbl">Gen Tokens/s</div>
       <div class="plot"><div class="yax"><span id="ax-gen-top">0</span><span>0</span></div><div class="bars" id="ch-gen"></div></div>
       <div class="cap" id="cap-gen">current: 0.0 tok/s</div></div>
-    <div class="tile spark"><div class="lbl">GPU Cache %</div>
+    <div class="tile spark" title="Использование KV-кэша (%) во времени. Близко к 100% = риск preemptions. Внизу текущее значение."><div class="lbl">GPU Cache %</div>
       <div class="plot"><div class="yax"><span id="ax-kv-top">0%</span><span>0</span></div><div class="bars" id="ch-kv"></div></div>
       <div class="cap" id="cap-kv">current: 0.0%</div></div>
   </div>
@@ -427,10 +427,11 @@ async function tick(){
     $('hdr-status').textContent='ONLINE';$('hdr-status').className='st-online';
     $('url').textContent=d.url||'';
     /* model bar */
-    const mb=[];mb.push('<span class="mono-model">'+(d.model_name||'unknown')+'</span>');
-    if(d.kv_dtype)mb.push('<span class="dim">kv '+d.kv_dtype+'</span>');
-    if(d.num_blocks)mb.push('<span class="dim">'+d.num_blocks+' blks</span>');
-    if(d.mem_util!=null)mb.push('<span class="dim">util '+Math.round(d.mem_util*100)+'%</span>');
+    const mb=[];
+    mb.push('<span class="mono-model" title="Имя загруженной в vLLM модели (из лейба model_name в метриках).">'+(d.model_name||'unknown')+'</span>');
+    if(d.kv_dtype)mb.push('<span class="dim" title="Тип данных KV-кэша (precision). Например fp8_e5m2, bf16, fp16. Ниже точность — меньше занимаемой видеопамяти.">kv '+d.kv_dtype+'</span>');
+    if(d.num_blocks)mb.push('<span class="dim" title="Число доступных KV-блоков на GPU. Определяет максимальное количество одновременных запросов / длину контекста.">'+d.num_blocks+' blks</span>');
+    if(d.mem_util!=null)mb.push('<span class="dim" title="Целевое использование видеопамяти (gpu-memory-utilization). Доля VRAM, которую vLLM резервирует под KV-кэш.">util '+Math.round(d.mem_util*100)+'%</span>');
     $('modelbar').innerHTML=mb.join('<span class="sep dim">·</span>');
     /* load */
     setVal('running','c-white',Math.round(d.running||0)+'');
