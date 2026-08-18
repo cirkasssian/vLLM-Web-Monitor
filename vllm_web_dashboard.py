@@ -380,7 +380,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .sw-rc{position:relative;width:26px;height:26px;border-radius:50%;border:none;padding:0;cursor:pointer;background:transparent}
 .sw-rc-ring{display:block;width:26px;height:26px;border-radius:50%;background:conic-gradient(#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);box-shadow:0 0 0 2px var(--bg) inset}
 .sw-rc:hover .sw-rc-ring{filter:brightness(1.12)}
-.sw-rc::after{content:'';position:absolute;inset:7px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
+.sw-rc-center{position:absolute;inset:7px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
 .cp-pop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:60}
 .cp-pop[hidden]{display:none}
 .cp-pop-inner{background:var(--panel);border:1px solid var(--accent);border-radius:10px;padding:14px 16px;width:min(280px,90vw);box-shadow:0 10px 40px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:10px}
@@ -507,6 +507,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
         <label class="sw" title="Розовый"><input type="radio" name="set-accent-presets" value="#ff7eb6"/><span class="sw-dot" style="--sw:#ff7eb6"></span></label>
         <button type="button" class="sw-rc" id="set-accent-open" title="Произвольный цвет (открыть пикер)">
           <span class="sw-rc-ring"></span>
+          <span class="sw-rc-center" id="sw-rc-center"></span>
         </button>
       </div>
       <span class="fld-hint">Цвет рамок, графиков и кнопок. Радужная кнопка — произвольный цвет.</span>
@@ -729,8 +730,14 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!modal.hidden)close
 document.querySelectorAll('input[name=set-accent-presets]').forEach(r=>{
   r.onchange=()=>{ pickerSetHex(r.value,false); };
 });
+// update the rainbow button's center disc to a given hex
+function rcCenterSet(hex){
+  const el=$('sw-rc-center');
+  if(el)el.style.background=hex;
+}
 // rainbow button opens the custom-picker popup, synced to the current accent
 function openCpPop(){
+  rcCenterSet(curAccent);
   pickerSetHex(curAccent,false);
   $('cp-pop').hidden=false;
   setTimeout(()=>$('set-accent-hex').select(),30);
@@ -763,12 +770,13 @@ $('set-accent-hex').onblur=function(){
            $('cp-swatch').style.background=norm;
            document.querySelectorAll('input[name=set-accent-presets]').forEach(x=>{x.checked=(x.value.toLowerCase()===norm);}); }
 };
-// OK: confirm the staged hex (syncs controls) and closes the popup.
+// OK: confirm the staged hex (syncs controls + rainbow center) and closes the popup.
 // The actual page change happens on the shared "Save" button.
 $('set-accent-ok').onclick=function(){
   const hex=pickerGetHex();
   if(!hex)return;
   pickerSetHex(hex,false);
+  rcCenterSet(hex);
   closeCpPop();
 };
 // helper: read the currently-staged accent hex from modal controls
