@@ -163,9 +163,9 @@ class Sampler:
             'gen_tok_s': rate('gen_tokens'),
             # prefix cache hit ratio
             'prefix_hit_ratio': self._ratio(cur, 'prefix_hits', 'prefix_queries'),
-            # spec decode
-            'spec_accept_rate': self._spec_accept(cur, prev),
-            'spec_accept_len': self._spec_accept_len(cur, prev),
+            # spec decode (lifetime cumulative, mirrors terminal)
+            'spec_accept_rate': self._spec_accept_lifetime(cur),
+            'spec_accept_len': self._spec_accept_len_lifetime(cur),
             # completed totals
             'completed_reqs': cur.get('success_total'),
             'completed_stop': cur.get('success_stop'),
@@ -200,29 +200,17 @@ class Sampler:
             return None
         return min(1.0, num / den)
 
-    def _spec_accept(self, cur: dict, prev: dict) -> Optional[float]:
-        if not prev:
+    def _spec_accept_lifetime(self, cur: dict) -> Optional[float]:
+        a, d = cur.get('spec_accepted'), cur.get('spec_draft_tokens')
+        if a is None or d is None or d <= 0:
             return None
-        a1, d1 = cur.get('spec_accepted'), cur.get('spec_draft_tokens')
-        a0, d0 = prev.get('spec_accepted'), prev.get('spec_draft_tokens')
-        if None in (a1, d1, a0, d0):
-            return None
-        da, dd = a1 - a0, d1 - d0
-        if dd <= 0:
-            return None
-        return max(0.0, min(1.0, da / dd))
+        return max(0.0, min(1.0, a / d))
 
-    def _spec_accept_len(self, cur: dict, prev: dict) -> Optional[float]:
-        if not prev:
+    def _spec_accept_len_lifetime(self, cur: dict) -> Optional[float]:
+        a, dr = cur.get('spec_accepted'), cur.get('spec_drafts')
+        if a is None or dr is None or dr <= 0:
             return None
-        a1, dr1 = cur.get('spec_accepted'), cur.get('spec_drafts')
-        a0, dr0 = prev.get('spec_accepted'), prev.get('spec_drafts')
-        if None in (a1, dr1, a0, dr0):
-            return None
-        da, ddr = a1 - a0, dr1 - dr0
-        if ddr <= 0:
-            return None
-        return max(0.0, da / ddr)
+        return max(0.0, a / dr)
 
     def _hist_mean_delta(self, name: str) -> Optional[float]:
         if len(self.history) < 2:
@@ -309,12 +297,12 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .c-white{color:var(--white)} .c-green{color:var(--green)} .c-yellow{color:var(--warn)}
 .c-red{color:var(--err)} .c-dim{color:var(--dim);font-weight:400}
 /* ---- History: y-axis bar chart, axis on left, bars right, caption below ---- */
-.spark{padding:14px 14px 10px}
-.spark .plot{display:flex;gap:8px}
-.spark .yax{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;color:var(--dim);font-size:11px;width:auto;min-width:26px}
-.spark .bars{flex:1;display:flex;align-items:flex-end;gap:1px;height:74px;border-left:1px solid var(--green);padding-left:2px}
+.spark{padding:14px 14px 12px}
+.spark .plot{display:flex;gap:10px;align-items:stretch}
+.spark .yax{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;color:var(--dim);font-size:11px;width:auto;min-width:30px;padding-bottom:1px}
+.spark .bars{flex:1;display:flex;align-items:flex-end;gap:1px;height:120px;border-left:1px solid var(--green);padding-left:2px}
 .spark .bar{flex:1;background:var(--green);opacity:.85;min-height:0;transition:height .25s}
-.spark .cap{color:var(--dim);font-size:12px;margin-top:8px}
+.spark .cap{color:var(--dim);font-size:12px;margin-top:10px}
 .footer{margin-top:18px;color:var(--dim);font-size:11px;text-align:center}
 @media (max-width:900px){.t3,.t4{grid-template-columns:1fr 1fr}}
 @media (max-width:560px){.t3,.t4{grid-template-columns:1fr}}
