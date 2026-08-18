@@ -13,14 +13,44 @@ No third-party dependencies. Python 3.9+.
 
 import argparse
 import json
+import os
 import re
+import signal
 import threading
 import time
 import urllib.request
 import urllib.error
 from collections import deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from typing import Dict, List, Optional
+
+# Settings persist alongside the app file.
+APP_DIR = Path(__file__).resolve().parent
+CONFIG_PATH = APP_DIR / 'config.json'
+MIN_INTERVAL, MAX_INTERVAL = 1.0, 300.0
+
+
+def load_settings() -> Dict:
+    """Read persisted settings; return {} when the file is absent or invalid."""
+    try:
+        return json.loads(CONFIG_PATH.read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        return {}
+
+
+def save_settings(settings: Dict) -> None:
+    """Atomically write settings to CONFIG_PATH."""
+    tmp = CONFIG_PATH.with_suffix('.tmp')
+    tmp.write_text(json.dumps(settings, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+    os.replace(tmp, CONFIG_PATH)
+
+
+def save_setting(key: str, value: float) -> None:
+    """Persist a single setting, preserving other keys."""
+    settings = load_settings()
+    settings[key] = value
+    save_settings(settings)
 
 # ---------------------------------------------------------------------------
 # Metric parsing
@@ -306,6 +336,24 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .spark .bar{flex:1 1 0;background:var(--green);opacity:.85;min-height:0;transition:height .25s}
 .spark .cap{color:var(--dim);font-size:12px;margin-top:10px;text-align:center}
 .footer{margin-top:18px;color:var(--dim);font-size:11px;text-align:center}
+.footer a{color:var(--green);cursor:pointer;text-decoration:none}
+.footer a:hover{text-decoration:underline}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:50}
+.modal-backdrop[hidden]{display:none}
+.modal{background:var(--panel,#11151f);border:1px solid var(--border);border-radius:8px;padding:18px 20px;width:min(360px,90vw);box-shadow:0 8px 30px rgba(0,0,0,.5)}
+.modal-head{font-weight:700;color:var(--green);margin-bottom:14px;font-size:14px}
+.fld{display:block;margin-bottom:12px}
+.fld-lbl{display:block;color:var(--fg);font-size:12px;margin-bottom:6px}
+.fld input[type=number]{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--fg);font-family:var(--mono);font-size:14px;padding:8px 10px}
+.fld input:focus{outline:none;border-color:var(--accent,var(--green))}
+.fld-hint{display:block;color:var(--dim);font-size:11px;margin-top:5px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+.btn{background:var(--green);color:#0b0e14;border:none;border-radius:6px;padding:8px 16px;font-family:var(--mono);font-size:13px;font-weight:700;cursor:pointer}
+.btn:hover{filter:brightness(1.1)}
+.btn.ghost{background:transparent;color:var(--dim);border:1px solid var(--border)}
+.btn.ghost:hover{color:var(--fg);filter:none}
+.modal-msg{margin-top:10px;font-size:12px;min-height:14px}
+.modal-msg.ok{color:var(--green)} .modal-msg.err{color:var(--err)}
 @media (max-width:900px){.t3,.t4{grid-template-columns:1fr 1fr}}
 @media (max-width:560px){.t3,.t4{grid-template-columns:1fr}}
 </style></head><body>
@@ -376,12 +424,29 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
   </div>
 </div>
 
-<div class="footer">updates every <span id="iv2">?</span>s · click dot to toggle auto-refresh</div>
+<div class="footer">updates every <span id="iv2">?</span>s · click dot to toggle auto-refresh · <a href="#" id="settings-btn" title="Открыть настройки (интервал обновления)">⚙ настройки</a></div>
+
+<div class="modal-backdrop" id="settings-modal" hidden>
+  <div class="modal">
+    <div class="modal-head">Настройки</div>
+    <label class="fld">
+      <span class="fld-lbl">Интервал обновления, сек</span>
+      <input type="number" id="set-interval" min="1" max="300" step="0.5" />
+      <span class="fld-hint">Как часто дашборд опрашивает vLLM /metrics. Диапазон 1–300 с.</span>
+    </label>
+    <div class="modal-actions">
+      <button class="btn ghost" id="set-cancel">Отмена</button>
+      <button class="btn" id="set-save">Сохранить</button>
+    </div>
+    <div class="modal-msg" id="set-msg"></div>
+  </div>
+</div>
 
 </div>
 <script>
 const $=id=>document.getElementById(id);
 let auto=true,last=null;
+let curInterval=__INTERVAL__;
 
 /* ---- formatters mirroring the terminal vllm-monitor ---- */
 function fmtCount(n){n=Math.abs(n);
@@ -475,8 +540,35 @@ async function tick(){
   }catch(e){$('hdr-status').textContent='ERROR';$('hdr-status').className='st-offline';$('dot').className='dot off';}
 }
 $('dot').onclick=()=>{auto=!auto;if(auto)loop();};
-$('iv').textContent=__INTERVAL__;$('iv2').textContent=__INTERVAL__;
-function loop(){if(!auto)return;tick().then(()=>setTimeout(loop,__INTERVAL__*1000));}
+$('iv').textContent=curInterval;$('iv2').textContent=curInterval;
+function loop(){if(!auto)return;tick().then(()=>setTimeout(loop,curInterval*1000));}
+
+/* ---- settings modal ---- */
+const modal=$('settings-modal');
+function openSettings(){
+  $('set-interval').value=(last&&last.interval)?last.interval:curInterval;
+  $('set-msg').textContent='';$('set-msg').className='modal-msg';
+  modal.hidden=false;setTimeout(()=>$('set-interval').focus(),30);
+}
+function closeSettings(){modal.hidden=true;}
+$('settings-btn').onclick=e=>{e.preventDefault();openSettings();};
+$('set-cancel').onclick=closeSettings;
+modal.onclick=e=>{if(e.target===modal)closeSettings();};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!modal.hidden)closeSettings();});
+$('set-save').onclick=async()=>{
+  const v=parseFloat($('set-interval').value);
+  const msg=$('set-msg');
+  if(isNaN(v)||v<1||v>300){msg.textContent='Интервал должен быть 1–300 сек.';msg.className='modal-msg err';return;}
+  try{
+    const r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({interval:v})});
+    const j=await r.json();
+    if(j.ok){
+      msg.textContent='Сохранено: '+j.interval+' с. Применяется сразу.';msg.className='modal-msg ok';
+      curInterval=j.interval;$('iv').textContent=j.interval;$('iv2').textContent=j.interval;
+      setTimeout(closeSettings,900);
+    }else{msg.textContent='Ошибка: '+(j.error||r.status);msg.className='modal-msg err';}
+  }catch(e){msg.textContent='Сеть: '+e.message;msg.className='modal-msg err';}
+};
 loop();
 </script></body></html>
 """
@@ -487,6 +579,7 @@ class Handler(BaseHTTPRequestHandler):
     poll_interval: float = 2.0
     vllm_url: str = ''
     api_key: Optional[str] = None
+    interval_cv: threading.Condition = None  # type: ignore
 
     def log_message(self, fmt, *args):  # quiet
         pass
@@ -502,7 +595,8 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(data)
         elif self.path == '/api/status':
             snap = self.sampler.current()
-            payload = {'online': bool(snap), 'ts': time.time(), 'url': self.vllm_url}
+            payload = {'online': bool(snap), 'ts': time.time(), 'url': self.vllm_url,
+                       'interval': self.poll_interval}
             if snap:
                 payload.update(snap)
             else:
@@ -518,10 +612,40 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
 
+    def do_POST(self):
+        if self.path != '/api/settings':
+            self.send_response(404)
+            self.end_headers()
+            return
+        try:
+            length = int(self.headers.get('Content-Length') or 0)
+            body = self.rfile.read(length) if length else b'{}'
+            data = json.loads(body.decode('utf-8'))
+            interval = data.get('interval')
+            if interval is None:
+                raise ValueError('missing interval')
+            iv = float(interval)
+            if not (1.0 <= iv <= 300.0):
+                raise ValueError('interval must be 1..300 seconds')
+            save_setting('interval', iv)
+            with Handler.interval_cv:
+                Handler.poll_interval = iv
+                Handler.interval_cv.notify_all()
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({'ok': True, 'interval': iv}).encode())
+        except Exception as e:
+            self.send_response(400)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({'ok': False, 'error': str(e)}).encode())
+
 
 def poll_loop(server: Handler, stop: threading.Event):
     url = server.vllm_url.rstrip('/') + '/metrics'
     headers = {'Authorization': f'Bearer {server.api_key}'} if server.api_key else {}
+    cv = Handler.interval_cv
     while not stop.is_set():
         try:
             req = urllib.request.Request(url, headers=headers)
@@ -529,9 +653,14 @@ def poll_loop(server: Handler, stop: threading.Event):
                 text = resp.read().decode('utf-8', 'replace')
             server.sampler.ingest(parse_prometheus(text), time.time())
         except Exception as e:
-            # keep last snapshot; mark offline via current() returning stale data
             pass
-        stop.wait(server.poll_interval)
+        with cv:
+            deadline = time.monotonic() + server.poll_interval
+            while not stop.is_set():
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    break
+                cv.wait(min(remaining, 0.5))
 
 
 def main():
@@ -540,20 +669,27 @@ def main():
     ap.add_argument('--api-key', default=None)
     ap.add_argument('--port', type=int, default=8501)
     ap.add_argument('--host', default='0.0.0.0')
-    ap.add_argument('--interval', type=float, default=2.0)
+    ap.add_argument('--interval', type=float, default=None,
+                    help='Poll interval in seconds. Overrides config.json when set.')
     args = ap.parse_args()
 
+    # Resolution order: CLI flag > config.json > built-in default (2s).
+    cfg_interval = load_settings().get('interval')
+    effective = args.interval if args.interval is not None else (cfg_interval or 2.0)
+
+    Handler.interval_cv = threading.Condition()
     Handler.vllm_url = args.vllm_url
     Handler.api_key = args.api_key
-    Handler.poll_interval = args.interval
+    Handler.poll_interval = effective
     Handler.sampler = Sampler()
 
     srv = ThreadingHTTPServer((args.host, args.port), Handler)
     stop = threading.Event()
     t = threading.Thread(target=poll_loop, args=(Handler, stop), daemon=True)
     t.start()
+    src = 'cli' if args.interval is not None else ('config' if cfg_interval else 'default')
     print(f'[vllm-web] listening on http://{args.host}:{args.port}')
-    print(f'[vllm-web] polling {args.vllm_url}/metrics every {args.interval}s')
+    print(f'[vllm-web] polling {args.vllm_url}/metrics every {effective}s (source: {src})')
     try:
         srv.serve_forever()
     finally:
