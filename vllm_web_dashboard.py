@@ -365,7 +365,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .footer a:hover{text-decoration:underline}
 .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:50}
 .modal-backdrop[hidden]{display:none}
-.modal{background:var(--panel,#11151f);border:1px solid var(--accent);border-radius:8px;padding:18px 20px;width:min(360px,90vw);box-shadow:0 8px 30px rgba(0,0,0,.5)}
+.modal{background:var(--panel,#11151f);border:1px solid var(--accent);border-radius:8px;padding:18px 20px 20px 20px;width:min(360px,90vw);box-shadow:0 8px 30px rgba(0,0,0,.5)}
 .modal-head{font-weight:700;color:var(--accent);margin-bottom:14px;font-size:14px}
 .fld{display:block;margin-bottom:12px}
 .fld-lbl{display:block;color:var(--fg);font-size:12px;margin-bottom:6px}
@@ -411,12 +411,12 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .ch-b{background:linear-gradient(to right,#000,#00f)}
 .cp-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:var(--fg);border:2px solid var(--bg);cursor:pointer}
 .cp-range::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--fg);border:2px solid var(--bg);cursor:pointer}
-.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:22px}
 .btn{background:var(--accent);color:#0b0e14;border:none;border-radius:6px;padding:8px 16px;font-family:var(--mono);font-size:13px;font-weight:700;cursor:pointer}
 .btn:hover{filter:brightness(1.1)}
 .btn.ghost{background:transparent;color:var(--dim);border:1px solid var(--accent)}
 .btn.ghost:hover{color:var(--fg);filter:none}
-.modal-msg{margin-top:10px;font-size:12px;min-height:14px}
+.modal-msg{margin-top:2px;font-size:12px}
 .modal-msg.ok{color:var(--accent)} .modal-msg.err{color:var(--err)}
 @media (max-width:900px){.t3,.t4{grid-template-columns:1fr 1fr}}
 @media (max-width:560px){.t3,.t4{grid-template-columns:1fr}}
@@ -507,11 +507,11 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
     <div class="fld">
       <span class="fld-lbl">Тема оформления</span>
       <div class="seg" id="set-theme-seg">
-        <label class="seg-opt"><input type="radio" name="set-theme" value="system" /><span>Как в системе</span></label>
+        <label class="seg-opt"><input type="radio" name="set-theme" value="system" /><span>Системная</span></label>
         <label class="seg-opt"><input type="radio" name="set-theme" value="dark" /><span>Тёмная</span></label>
         <label class="seg-opt"><input type="radio" name="set-theme" value="light" /><span>Светлая</span></label>
       </div>
-      <span class="fld-hint">«Как в системе» следует за prefers-color-scheme ОС.</span>
+      <span class="fld-hint">«Системная» следует за prefers-color-scheme ОС.</span>
     </div>
     <div class="fld">
       <span class="fld-lbl">Акцентный цвет</span>
@@ -527,7 +527,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
           <span class="sw-rc-center" id="sw-rc-center"></span>
         </button>
       </div>
-      <span class="fld-hint">Цвет рамок, графиков и кнопок. Радужная кнопка — произвольный цвет.</span>
+      <span class="fld-hint">Цвет рамок, графиков и кнопок.</span>
     </div>
     <div class="cp-pop" id="cp-pop" hidden>
       <div class="cp-pop-inner">
