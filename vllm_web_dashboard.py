@@ -292,46 +292,59 @@ PAGE_HTML = """<!doctype html>
 <title>vllm-monitor · vLLM Health Dashboard</title>
 <style>
 :root{
-  --bg:#0b0e14; --panel:#0b0e14; --border:#3fb950; --fg:#d8dee9;
-  --dim:#5e6a7e; --accent:#3fb950; --white:#ffffff;
-  --green:#3fb950; --cyan:#56d4dd; --ok:#3fb950; --warn:#ffd166; --err:#ff6b6b;
+  --bg:#0b0e14; --panel:#0b0e14; --fg:#d8dee9;
+  --dim:#5e6a7e; --white:#ffffff;
+  --cyan:#56d4dd; --warn:#ffd166; --err:#ff6b6b;
   --shadow:rgba(0,0,0,.5);
   --mono:'JetBrains Mono','SF Mono',Menlo,Consolas,'DejaVu Sans Mono',monospace;
 }
+/* accent drives border, bars, section labels, buttons, status dot */
+:root{ --accent:#3fb950; }
+[data-accent="blue"]   { --accent:#58a6ff; }
+[data-accent="purple"] { --accent:#bc8cff; }
+[data-accent="orange"] { --accent:#ffa657; }
+[data-accent="red"]    { --accent:#ff7b72; }
+[data-accent="pink"]   { --accent:#ff7eb6; }
 [data-theme="light"]{
-  --bg:#f4f6f8; --panel:#ffffff; --border:#2ea043; --fg:#1b2733;
-  --dim:#6b7785; --accent:#2ea043; --white:#0b1220;
-  --green:#1f8a3b; --cyan:#0e7490; --ok:#1f8a3b; --warn:#b7791f; --err:#d64545;
+  --bg:#f4f6f8; --panel:#ffffff; --fg:#1b2733;
+  --dim:#6b7785; --white:#0b1220;
+  --cyan:#0e7490; --warn:#b7791f; --err:#d64545;
   --shadow:rgba(0,0,0,.15);
 }
+[data-theme="light"][data-accent="green"] { --accent:#2ea043; }
+[data-theme="light"][data-accent="blue"]   { --accent:#1f6feb; }
+[data-theme="light"][data-accent="purple"] { --accent:#8250df; }
+[data-theme="light"][data-accent="orange"] { --accent:#bc4c00; }
+[data-theme="light"][data-accent="red"]    { --accent:#cf222e; }
+[data-theme="light"][data-accent="pink"]   { --accent:#bf3989; }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px;line-height:1.35;padding:18px}
 .wrap{max-width:1500px;margin:0 auto}
 /* ---- Header (two rows, rounded box, title top-left) ---- */
-.header{border:1px solid var(--border);border-radius:14px;padding:10px 16px;margin-bottom:18px}
+.header{border:1px solid var(--accent);border-radius:14px;padding:10px 16px;margin-bottom:18px}
 .header .row1{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .header .row2{display:flex;align-items:center;gap:12px;flex-wrap:wrap;color:var(--dim);margin-top:3px}
-.dot{width:9px;height:9px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok);flex:none}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);flex:none}
 .dot.off{background:var(--err);box-shadow:0 0 8px var(--err)}
-.st-online{color:var(--green);font-weight:700}
+.st-online{color:var(--accent);font-weight:700}
 .st-offline{color:var(--err);font-weight:700}
 .dim{color:var(--dim)}
 .mono-model{color:var(--cyan);font-weight:700}
 .sep{color:var(--dim)}
 /* ---- Sections ---- */
 .sec{margin-top:16px}
-.sec-label{color:var(--green);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;margin-bottom:8px}
+.sec-label{color:var(--accent);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;margin-bottom:8px}
 .tiles{display:grid;gap:12px}
 .t3{grid-template-columns:repeat(3,1fr)}
 .t4{grid-template-columns:repeat(4,1fr)}
 /* ---- Tile: title sits on the top border, value centered in body ---- */
-.tile{position:relative;border:1px solid var(--border);border-radius:8px;padding:16px 14px 12px;min-height:62px;display:flex;align-items:center;justify-content:center}
+.tile{position:relative;border:1px solid var(--accent);border-radius:8px;padding:16px 14px 12px;min-height:62px;display:flex;align-items:center;justify-content:center}
 .tile .lbl{position:absolute;top:-8px;left:12px;background:var(--bg);padding:0 6px;color:var(--dim);font-size:12px}
 .tile .val{text-align:center;font-weight:700;font-size:20px;white-space:nowrap}
 .tile .val.sm{font-size:16px}
 .tile .val .l1{display:block}
 .tile .val .l2{display:block;color:var(--dim);font-weight:400;font-size:12px;margin-top:3px}
-.c-white{color:var(--white)} .c-green{color:var(--green)} .c-yellow{color:var(--warn)}
+.c-white{color:var(--white)} .c-green{color:var(--accent)} .c-yellow{color:var(--warn)}
 .c-red{color:var(--err)} .c-dim{color:var(--dim);font-weight:400}
 /* ---- History: y-axis bar chart, axis on left, bars right, caption below ---- */
 /* override base .tile flex-centering so the plot can stretch full width */
@@ -339,36 +352,42 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .spark{padding:14px 14px 12px 8px}
 .spark .plot{display:flex;gap:4px;align-items:stretch;width:100%}
 .spark .yax{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;color:var(--dim);font-size:11px;width:auto;min-width:16px;padding-bottom:1px;flex:none}
-.spark .bars{flex:1 1 auto;min-width:0;display:flex;align-items:flex-end;gap:1px;height:120px;border-left:1px solid var(--green);padding-left:1px}
-.spark .bar{flex:1 1 0;background:var(--green);opacity:.85;min-height:0;transition:height .25s}
+.spark .bars{flex:1 1 auto;min-width:0;display:flex;align-items:flex-end;gap:1px;height:120px;border-left:1px solid var(--accent);padding-left:1px}
+.spark .bar{flex:1 1 0;background:var(--accent);opacity:.85;min-height:0;transition:height .25s}
 .spark .cap{color:var(--dim);font-size:12px;margin-top:10px;text-align:center}
 .footer{margin-top:18px;color:var(--dim);font-size:11px;text-align:center}
-.footer a{color:var(--green);cursor:pointer;text-decoration:none}
+.footer a{color:var(--accent);cursor:pointer;text-decoration:none}
 .footer a:hover{text-decoration:underline}
 .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:50}
 .modal-backdrop[hidden]{display:none}
-.modal{background:var(--panel,#11151f);border:1px solid var(--border);border-radius:8px;padding:18px 20px;width:min(360px,90vw);box-shadow:0 8px 30px rgba(0,0,0,.5)}
-.modal-head{font-weight:700;color:var(--green);margin-bottom:14px;font-size:14px}
+.modal{background:var(--panel,#11151f);border:1px solid var(--accent);border-radius:8px;padding:18px 20px;width:min(360px,90vw);box-shadow:0 8px 30px rgba(0,0,0,.5)}
+.modal-head{font-weight:700;color:var(--accent);margin-bottom:14px;font-size:14px}
 .fld{display:block;margin-bottom:12px}
 .fld-lbl{display:block;color:var(--fg);font-size:12px;margin-bottom:6px}
-.fld input[type=number]{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--fg);font-family:var(--mono);font-size:14px;padding:8px 10px}
-.fld input:focus{outline:none;border-color:var(--accent,var(--green))}
+.fld input[type=number]{width:100%;background:var(--bg);border:1px solid var(--accent);border-radius:6px;color:var(--fg);font-family:var(--mono);font-size:14px;padding:8px 10px}
+.fld input:focus{outline:none;border-color:var(--accent)}
 .fld-hint{display:block;color:var(--dim);font-size:11px;margin-top:5px}
-.seg{display:flex;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:3px}
+.seg{display:flex;gap:4px;background:var(--bg);border:1px solid var(--accent);border-radius:8px;padding:3px}
 .seg-opt{flex:1;position:relative}
 .seg-opt input{position:absolute;opacity:0;pointer-events:none}
 .seg-opt span{display:block;text-align:center;padding:6px 4px;border-radius:6px;color:var(--dim);font-size:12px;cursor:pointer;user-select:none}
-.seg-opt input:checked+span{background:var(--green);color:var(--bg);font-weight:700}
+.seg-opt input:checked+span{background:var(--accent);color:var(--bg);font-weight:700}
 [data-theme="light"] .seg-opt input:checked+span{color:#fff}
 .seg-opt span:hover{color:var(--fg)}
 .seg-opt input:checked+span:hover{color:inherit}
+.swatches{display:flex;gap:10px;flex-wrap:wrap}
+.sw{position:relative;cursor:pointer}
+.sw input{position:absolute;opacity:0;pointer-events:none}
+.sw-dot{display:block;width:26px;height:26px;border-radius:50%;background:var(--sw);border:2px solid transparent;box-shadow:0 0 0 2px var(--bg) inset}
+.sw input:checked+.sw-dot{border-color:var(--fg);transform:scale(1.08)}
+.sw:hover .sw-dot{filter:brightness(1.12)}
 .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
-.btn{background:var(--green);color:#0b0e14;border:none;border-radius:6px;padding:8px 16px;font-family:var(--mono);font-size:13px;font-weight:700;cursor:pointer}
+.btn{background:var(--accent);color:#0b0e14;border:none;border-radius:6px;padding:8px 16px;font-family:var(--mono);font-size:13px;font-weight:700;cursor:pointer}
 .btn:hover{filter:brightness(1.1)}
-.btn.ghost{background:transparent;color:var(--dim);border:1px solid var(--border)}
+.btn.ghost{background:transparent;color:var(--dim);border:1px solid var(--accent)}
 .btn.ghost:hover{color:var(--fg);filter:none}
 .modal-msg{margin-top:10px;font-size:12px;min-height:14px}
-.modal-msg.ok{color:var(--green)} .modal-msg.err{color:var(--err)}
+.modal-msg.ok{color:var(--accent)} .modal-msg.err{color:var(--err)}
 @media (max-width:900px){.t3,.t4{grid-template-columns:1fr 1fr}}
 @media (max-width:560px){.t3,.t4{grid-template-columns:1fr}}
 </style></head><body>
@@ -457,6 +476,18 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
         <label class="seg-opt"><input type="radio" name="set-theme" value="light" /><span>Светлая</span></label>
       </div>
       <span class="fld-hint">«Как в системе» следует за prefers-color-scheme ОС.</span>
+    </div>
+    <div class="fld">
+      <span class="fld-lbl">Акцентный цвет</span>
+      <div class="swatches" id="set-accent-swatches">
+        <label class="sw" title="Зелёный"><input type="radio" name="set-accent" value="green"/><span class="sw-dot" style="--sw:#3fb950"></span></label>
+        <label class="sw" title="Синий"><input type="radio" name="set-accent" value="blue"/><span class="sw-dot" style="--sw:#58a6ff"></span></label>
+        <label class="sw" title="Фиолетовый"><input type="radio" name="set-accent" value="purple"/><span class="sw-dot" style="--sw:#bc8cff"></span></label>
+        <label class="sw" title="Оранжевый"><input type="radio" name="set-accent" value="orange"/><span class="sw-dot" style="--sw:#ffa657"></span></label>
+        <label class="sw" title="Красный"><input type="radio" name="set-accent" value="red"/><span class="sw-dot" style="--sw:#ff7b72"></span></label>
+        <label class="sw" title="Розовый"><input type="radio" name="set-accent" value="pink"/><span class="sw-dot" style="--sw:#ff7eb6"></span></label>
+      </div>
+      <span class="fld-hint">Цвет рамок, графиков, разделов и кнопок.</span>
     </div>
     <div class="modal-actions">
       <button class="btn ghost" id="set-cancel">Отмена</button>
@@ -567,22 +598,32 @@ $('dot').onclick=()=>{auto=!auto;if(auto)loop();};
 $('iv').textContent=curInterval;$('iv2').textContent=curInterval;
 function loop(){if(!auto)return;tick().then(()=>setTimeout(loop,curInterval*1000));}
 
-/* ---- theme ---- */
-let curTheme='system';
+/* ---- appearance: theme + accent ---- */
+let curTheme='system', curAccent='green';
 const mqDark=window.matchMedia('(prefers-color-scheme: dark)');
 function applyTheme(mode){
   curTheme=mode;
   const eff=(mode==='light')?'light':(mode==='dark')?'dark':(mqDark.matches?'dark':'light');
   document.documentElement.setAttribute('data-theme',eff);
 }
+function applyAccent(color){
+  curAccent=color;
+  document.documentElement.setAttribute('data-accent',color);
+}
+function applyAppearance(theme,accent){
+  if(theme)applyTheme(theme);
+  if(accent)applyAccent(accent);
+}
 mqDark.addEventListener('change',()=>{if(curTheme==='system')applyTheme('system');});
 function themeRadio(val){const r=document.querySelector('input[name=set-theme][value="'+val+'"]');if(r)r.checked=true;}
+function accentRadio(val){const r=document.querySelector('input[name=set-accent][value="'+val+'"]');if(r)r.checked=true;}
 
 /* ---- settings modal ---- */
 const modal=$('settings-modal');
 function openSettings(){
   $('set-interval').value=(last&&last.interval)?last.interval:curInterval;
   themeRadio((last&&last.theme)?last.theme:curTheme);
+  accentRadio((last&&last.accent)?last.accent:curAccent);
   $('set-msg').textContent='';$('set-msg').className='modal-msg';
   modal.hidden=false;setTimeout(()=>$('set-interval').focus(),30);
 }
@@ -591,28 +632,32 @@ $('settings-btn').onclick=e=>{e.preventDefault();openSettings();};
 $('set-cancel').onclick=closeSettings;
 modal.onclick=e=>{if(e.target===modal)closeSettings();};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!modal.hidden)closeSettings();});
-// preview theme instantly on selection
+// preview appearance instantly on selection
 document.querySelectorAll('input[name=set-theme]').forEach(r=>{
   r.onchange=()=>applyTheme(r.value);
+});
+document.querySelectorAll('input[name=set-accent]').forEach(r=>{
+  r.onchange=()=>applyAccent(r.value);
 });
 $('set-save').onclick=async()=>{
   const v=parseFloat($('set-interval').value);
   const t=(document.querySelector('input[name=set-theme]:checked')||{}).value||'system';
+  const a=(document.querySelector('input[name=set-accent]:checked')||{}).value||'green';
   const msg=$('set-msg');
   if(isNaN(v)||v<1||v>300){msg.textContent='Интервал должен быть 1–300 сек.';msg.className='modal-msg err';return;}
   try{
-    const r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({interval:v,theme:t})});
+    const r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({interval:v,theme:t,accent:a})});
     const j=await r.json();
     if(j.ok){
-      applyTheme(j.theme);
-      msg.textContent='Сохранено: '+j.interval+' с, тема: '+j.theme+'. Применяется сразу.';msg.className='modal-msg ok';
-      curInterval=j.interval;curTheme=j.theme;$('iv').textContent=j.interval;$('iv2').textContent=j.interval;
+      applyAppearance(j.theme,j.accent);
+      msg.textContent='Сохранено: '+j.interval+' с, тема: '+j.theme+', цвет: '+j.accent+'. Применяется сразу.';msg.className='modal-msg ok';
+      curInterval=j.interval;curTheme=j.theme;curAccent=j.accent;$('iv').textContent=j.interval;$('iv2').textContent=j.interval;
       setTimeout(closeSettings,900);
     }else{msg.textContent='Ошибка: '+(j.error||r.status);msg.className='modal-msg err';}
   }catch(e){msg.textContent='Сеть: '+e.message;msg.className='modal-msg err';}
 };
-// apply persisted theme ASAP (before first paint of data)
-fetch('/api/status').then(r=>r.json()).then(d=>{if(d.theme)applyTheme(d.theme);}).catch(()=>{});
+// apply persisted theme+accent ASAP (before first paint of data)
+fetch('/api/status').then(r=>r.json()).then(d=>applyAppearance(d.theme,d.accent)).catch(()=>{});
 loop();
 </script></body></html>
 """
@@ -639,9 +684,11 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(data)
         elif self.path == '/api/status':
             snap = self.sampler.current()
+            settings = load_settings()
             payload = {'online': bool(snap), 'ts': time.time(), 'url': self.vllm_url,
                        'interval': self.poll_interval,
-                       'theme': load_settings().get('theme', 'system')}
+                       'theme': settings.get('theme', 'system'),
+                       'accent': settings.get('accent', 'green')}
             if snap:
                 payload.update(snap)
             else:
@@ -666,7 +713,7 @@ class Handler(BaseHTTPRequestHandler):
             length = int(self.headers.get('Content-Length') or 0)
             body = self.rfile.read(length) if length else b'{}'
             data = json.loads(body.decode('utf-8'))
-            if 'interval' not in data and 'theme' not in data:
+            if not any(k in data for k in ('interval', 'theme', 'accent')):
                 raise ValueError('nothing to update')
             result = {}
             if 'interval' in data:
@@ -684,6 +731,12 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError('theme must be system, dark or light')
                 save_setting('theme', th)
                 result['theme'] = th
+            if 'accent' in data:
+                ac = data['accent']
+                if ac not in ('green', 'blue', 'purple', 'orange', 'red', 'pink'):
+                    raise ValueError('invalid accent')
+                save_setting('accent', ac)
+                result['accent'] = ac
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
