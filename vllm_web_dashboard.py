@@ -763,11 +763,11 @@ $('set-accent-hex').onblur=function(){
            $('cp-swatch').style.background=norm;
            document.querySelectorAll('input[name=set-accent-presets]').forEach(x=>{x.checked=(x.value.toLowerCase()===norm);}); }
 };
-// OK: apply the staged hex to the page immediately, then close the popup (Save persists separately)
+// OK: confirm the staged hex (syncs controls) and closes the popup.
+// The actual page change happens on the shared "Save" button.
 $('set-accent-ok').onclick=function(){
   const hex=pickerGetHex();
   if(!hex)return;
-  applyAccent(hex);
   pickerSetHex(hex,false);
   closeCpPop();
 };
