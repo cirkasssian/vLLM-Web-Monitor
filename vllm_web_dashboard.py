@@ -380,6 +380,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .sw-rc{position:relative;width:26px;height:26px;border-radius:50%;border:none;padding:0;cursor:pointer;background:transparent}
 .sw-rc-ring{display:block;width:26px;height:26px;border-radius:50%;background:conic-gradient(#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);box-shadow:0 0 0 2px var(--bg) inset}
 .sw-rc:hover .sw-rc-ring{filter:brightness(1.12)}
+.sw-rc.active-cust .sw-rc-ring{border:2px solid var(--fg);transform:scale(1.08)}
 .sw-rc-center{position:absolute;inset:5px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
 .cp-pop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:60}
 .cp-pop[hidden]{display:none}
@@ -730,10 +731,12 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!modal.hidden)close
 document.querySelectorAll('input[name=set-accent-presets]').forEach(r=>{
   r.onchange=()=>{ pickerSetHex(r.value,false); };
 });
-// update the rainbow button's center disc to a given hex
+// update the rainbow button's center disc + active-cust outline (when hex is not a preset)
 function rcCenterSet(hex){
   const el=$('sw-rc-center');
   if(el)el.style.background=hex;
+  const btn=$('set-accent-open');
+  if(btn)btn.classList.toggle('active-cust',!PRESET_HEXES.includes(hex));
 }
 // rainbow button opens the custom-picker popup, synced to the current accent
 function openCpPop(){
