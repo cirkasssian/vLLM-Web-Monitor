@@ -328,9 +328,11 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .dot.off{background:var(--err);box-shadow:0 0 8px var(--err)}
 .st-online{color:var(--accent);font-weight:700}
 .st-offline{color:var(--err);font-weight:700}
-.pause-btn{display:inline-flex;align-items:center;justify-content:center;min-width:0;height:18px;padding:0 1px;margin-left:-3px;position:relative;top:-1px;border-radius:4px;color:var(--accent);cursor:pointer;user-select:none;font-size:10px;letter-spacing:-1px;line-height:1;border:1px solid transparent}
-.pause-btn:hover{background:var(--border);border-color:var(--border)}
-.pause-btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.pause-btn{display:inline-flex;align-items:center;justify-content:center;min-width:0;height:18px;padding:0 1px;margin-left:-3px;position:relative;top:-1px;border-radius:4px;color:var(--accent);cursor:pointer;user-select:none;font-size:10px;letter-spacing:-1px;line-height:1}
+.pause-btn::before{content:'';position:absolute;left:-8px;right:-8px;top:-6px;bottom:-6px}
+.pause-btn:hover{background:var(--border)}
+.pause-btn:focus{outline:none}
+.pause-btn:focus-visible{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
 .pause-btn.paused{color:var(--warn)}
 .dim{color:var(--dim)}
 .mono-model{color:var(--cyan);font-weight:700}
