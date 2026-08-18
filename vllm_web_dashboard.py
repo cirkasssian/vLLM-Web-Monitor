@@ -317,6 +317,11 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .hdr-right{display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-end;line-height:1.3;flex:none}
 .hdr-right a{color:var(--accent);cursor:pointer;text-decoration:none;font-weight:700;font-size:14px}
 .hdr-right a:hover{text-decoration:underline}
+.theme-toggle{cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;padding:2px;border-radius:5px;user-select:none;margin-top:4px;margin-right:-4px;color:var(--accent)}
+.theme-toggle svg{display:block;width:16px;height:16px}
+.theme-toggle:hover{background:var(--bg)}
+.theme-toggle:focus{outline:none}
+.theme-toggle:focus-visible{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
 .dot{width:9px;height:9px;border-radius:50%;background:#3fb950;box-shadow:0 0 8px #3fb950;flex:none;position:relative;top:-1px}
 .dot.off{background:#ff6b6b;box-shadow:0 0 8px #ff6b6b}
 .st-online{color:var(--accent);font-weight:700}
@@ -435,14 +440,15 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
   </div>
   <div class="hdr-right">
     <a href="#" id="settings-btn" title="Открыть настройки (интервал, тема, акцентный цвет)">⚙ настройки</a>
+    <span class="theme-toggle" id="theme-toggle" title="Быстрое переключение темы (светлая/тёмная)" role="button" tabindex="0"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
   </div>
 </div>
 
 <div class="sec"><div class="sec-label">Load</div>
   <div class="tiles t3">
     <div class="tile" title="Количество запросов, которые в данный момент активно обрабатываются GPU (prefill + decode). 0 = сервер свободен."><div class="lbl">Running</div><div class="val c-white" id="running">—</div></div>
-    <div class="tile" title="Запросы, ожидающие своей очереди — не хватает VRAM/KV-блоков или GPU занят другими запросами. Зеленый = пусто, желтый = есть очередь (перегрузка)."><div class="lbl">Queued</div><div class="val c-green" id="waiting">—</div></div>
-    <div class="tile" title="Число запросов, выгруженных из GPU-памяти (preemption) из-за нехватки KV-кэша. 0 = нормально. >0 = KV-кэш переполнен, возможны повторы работы."><div class="lbl">Preemptions</div><div class="val c-green" id="preempted">—</div></div>
+    <div class="tile" title="Запросы, ожидающие своей очереди — не хватает VRAM/KV-блоков или GPU занят другими запросами. 0 = свободно, >0 = есть очередь (перегрузка)."><div class="lbl">Queued</div><div class="val c-white" id="waiting">—</div></div>
+    <div class="tile" title="Число запросов, выгруженных из GPU-памяти (preemption) из-за нехватки KV-кэша. 0 = нормально. >0 = KV-кэш переполнен, возможны повторы работы."><div class="lbl">Preemptions</div><div class="val c-white" id="preempted">—</div></div>
   </div>
 </div>
 
@@ -459,7 +465,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
   <div class="tiles t4">
     <div class="tile" title="Скорость обработки входных токенов (prefill). Высокое значение при большом prompt — норма."><div class="lbl">Prompt Tokens/s</div><div class="val c-white" id="ptok">—</div></div>
     <div class="tile" title="Скорость генерации выходных токенов (decode). Основная метрика производительности ответа. 0 = нет активной генерации."><div class="lbl">Gen Tokens/s</div><div class="val c-white" id="gtok">—</div></div>
-    <div class="tile" title="Доля занятых блоков KV-кэша. Зеленый <80%, желтый 80–95%, красный ≥95%. Высокое значение = мало места для новых/больших запросов."><div class="lbl">GPU KV Cache</div><div class="val c-green" id="kv">—</div></div>
+    <div class="tile" title="Доля занятых блоков KV-кэша. Близко к 100% = мало места для новых/больших запросов, возможен риск preemptions."><div class="lbl">GPU KV Cache</div><div class="val c-white" id="kv">—</div></div>
     <div class="tile" title="Доля запросов, попавших в префиксный кэш (повторные одинаковые начальные части prompt). Чем выше, тем быстрее обработка похожих запросов."><div class="lbl">Prefix Cache Hit</div><div class="val c-white" id="pcache">—</div></div>
   </div>
 </div>
@@ -565,10 +571,6 @@ function fmtDur(s){
   if(Math.abs(s)<3600){const m=Math.floor(Math.round(s)/60),ss=Math.round(s)%60;return m+'m '+ss+'s';}
   const h=Math.floor(Math.round(s)/3600),rem=Math.round(s)%3600;return h+'h '+(rem/60|0)+'m';}
 function fmtInt(v){return v==null||isNaN(v)?'—':Math.round(v).toLocaleString('en-US');}
-function pctColor(v){v=v*100;
-  if(v>=95)return['bold red',v.toFixed(1)+'%'];
-  if(v>=80)return['bold yellow',v.toFixed(1)+'%'];
-  return['bold green',v.toFixed(1)+'%'];}
 function setVal(id,cls,text){const el=$(id);el.className='val'+(cls?' '+cls:'');el.textContent=text;}
 
 function paintAxis(el,arr,fmtFn,topId){
@@ -605,16 +607,15 @@ async function tick(){
     $('modelbar').innerHTML=mb.join('<span class="sep dim">·</span>');
     /* load */
     setVal('running','c-white',Math.round(d.running||0)+'');
-    const w=d.waiting||0;setVal('waiting',w===0?'c-green':'c-yellow',Math.round(w)+'');
-    const p=d.preempted||0;setVal('preempted',p===0?'c-green':'c-yellow',Math.round(p)+'');
+    setVal('waiting','c-white',Math.round(d.waiting||0)+'');
+    setVal('preempted','c-white',Math.round(d.preempted||0)+'');
     /* latency */
     [['e2e','latency_e2e'],['ttft','latency_ttft'],['tpot','latency_tpot'],['queue','queue_time']].forEach(([id,k])=>{
       const v=d[k];setVal(id,v>0?'c-white':'c-dim',v>0?fmtDur(v):'—');});
     /* throughput & cache */
     setVal('ptok','c-white',(d.prompt_tok_s||0).toFixed(1));
     setVal('gtok','c-white',(d.gen_tok_s||0).toFixed(1));
-    const pc=pctColor(d.kv_usage||0);
-    setVal('kv',{ 'bold green':'c-green','bold yellow':'c-yellow','bold red':'c-red'}[pc[0]],pc[1]);
+    setVal('kv','c-white',((d.kv_usage||0)*100).toFixed(1)+'%');
     setVal('pcache','c-white',((d.prefix_hit_ratio||0)*100).toFixed(1)+'%');
     /* stats */
     if(d.spec_accept_rate!=null){
@@ -685,6 +686,32 @@ function applyAccent(raw){
 function applyAppearance(theme,accent){
   if(theme)applyTheme(theme);
   if(accent)applyAccent(accent);
+  updateThemeIcon();
+}
+function effectiveTheme(){
+  if(curTheme==='light')return 'light';
+  if(curTheme==='dark')return 'dark';
+  return mqDark.matches?'dark':'light';
+}
+const ICON_MOON='<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+const ICON_SUN='<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+function updateThemeIcon(){
+  const el=$('theme-toggle');
+  if(!el)return;
+  // icon shows the theme you'll switch TO (opposite of current effective)
+  el.innerHTML=effectiveTheme()==='light'?ICON_MOON:ICON_SUN;
+}
+function quickToggleTheme(){
+  const next=effectiveTheme()==='light'?'dark':'light';
+  applyTheme(next);
+  updateThemeIcon();
+  fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({theme:next})})
+    .then(r=>r.json()).then(j=>{if(j&&j.ok){applyTheme(next);updateThemeIcon();}}).catch(()=>{});
+}
+const themeToggleEl=$('theme-toggle');
+if(themeToggleEl){
+  themeToggleEl.onclick=quickToggleTheme;
+  themeToggleEl.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();quickToggleTheme();}};
 }
 // hex <-> rgb helpers
 function hexToRgb(hex){
