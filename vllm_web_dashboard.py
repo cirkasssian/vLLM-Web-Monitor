@@ -366,13 +366,13 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
   <div class="tiles t3">
     <div class="tile spark"><div class="lbl">Active Requests</div>
       <div class="plot"><div class="yax"><span id="ax-active-top">0</span><span>0</span></div><div class="bars" id="ch-active"></div></div>
-      <div class="cap" id="cap-active">current = 0</div></div>
+      <div class="cap" id="cap-active">current: 0</div></div>
     <div class="tile spark"><div class="lbl">Gen Tokens/s</div>
       <div class="plot"><div class="yax"><span id="ax-gen-top">0</span><span>0</span></div><div class="bars" id="ch-gen"></div></div>
-      <div class="cap" id="cap-gen">current = 0.0 tok/s</div></div>
+      <div class="cap" id="cap-gen">current: 0.0 tok/s</div></div>
     <div class="tile spark"><div class="lbl">GPU Cache %</div>
       <div class="plot"><div class="yax"><span id="ax-kv-top">0%</span><span>0</span></div><div class="bars" id="ch-kv"></div></div>
-      <div class="cap" id="cap-kv">current = 0.0%</div></div>
+      <div class="cap" id="cap-kv">current: 0.0%</div></div>
   </div>
 </div>
 
@@ -465,11 +465,11 @@ async function tick(){
     /* history */
     const h=d.history||{};
     paintAxis($('ch-active'),h.active||[],x=>Math.round(x)+'','ax-active-top');
-    $('cap-active').textContent='current = '+Math.round(d.running||0);
+    $('cap-active').textContent='current: '+Math.round(d.running||0);
     paintAxis($('ch-gen'),h.gen_tok_s||[],x=>Math.round(x)+'','ax-gen-top');
-    $('cap-gen').textContent='current = '+(d.gen_tok_s||0).toFixed(1)+' tok/s';
+    $('cap-gen').textContent='current: '+(d.gen_tok_s||0).toFixed(1)+' tok/s';
     paintAxis($('ch-kv'),h.kv_pct||[],x=>Math.round(x)+'%','ax-kv-top');
-    $('cap-kv').textContent='current = '+((d.kv_usage||0)*100).toFixed(1)+'%';
+    $('cap-kv').textContent='current: '+((d.kv_usage||0)*100).toFixed(1)+'%';
     last=d;
   }catch(e){$('hdr-status').textContent='ERROR';$('hdr-status').className='st-offline';$('dot').className='dot off';}
 }
