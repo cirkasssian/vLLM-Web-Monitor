@@ -377,12 +377,20 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .sw-dot{display:block;width:26px;height:26px;border-radius:50%;background:var(--sw);border:2px solid transparent;box-shadow:0 0 0 2px var(--bg) inset}
 .sw input:checked+.sw-dot{border-color:var(--fg);transform:scale(1.08)}
 .sw:hover .sw-dot{filter:brightness(1.12)}
-.sw-custom{position:relative;display:inline-block}
-.sw-custom input[type=color]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;margin:0}
-.sw-dot-custom{display:block;width:26px;height:26px;border-radius:50%;background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red);border:2px solid transparent;box-shadow:0 0 0 2px var(--bg) inset;overflow:hidden}
-.sw-dot-custom::after{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--accent)}
-.sw-custom.active .sw-dot-custom{border-color:var(--fg);transform:scale(1.08)}
-.btn.mini{padding:4px 12px;font-size:12px;align-self:center}
+.custom-pick{display:flex;flex-direction:column;gap:6px;padding:8px;border:1px solid var(--accent);border-radius:8px;background:var(--bg);min-width:150px}
+.cp-row{display:flex;align-items:center;gap:8px}
+.cp-hex{flex:1;min-width:0;background:var(--panel);border:1px solid var(--accent);border-radius:6px;color:var(--fg);font-family:var(--mono);font-size:13px;padding:5px 8px;text-transform:lowercase}
+.cp-hex:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.cp-swatch{width:26px;height:26px;border-radius:6px;border:1px solid var(--accent);flex:none;background:var(--accent)}
+.cp-chan{display:flex;align-items:center;gap:8px;color:var(--dim);font-size:11px;font-weight:700}
+.cp-chan>span:first-child{width:10px}
+.cp-range{-webkit-appearance:none;appearance:none;flex:1;height:10px;border-radius:5px;outline:none;cursor:pointer;border:1px solid var(--accent)}
+.ch-r{background:linear-gradient(to right,#000,#f00)}
+.ch-g{background:linear-gradient(to right,#000,#0f0)}
+.ch-b{background:linear-gradient(to right,#000,#00f)}
+.cp-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:var(--fg);border:2px solid var(--bg);cursor:pointer}
+.cp-range::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--fg);border:2px solid var(--bg);cursor:pointer}
+.btn.mini{padding:4px 12px;font-size:12px;line-height:1.4;align-self:stretch}
 .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
 .btn{background:var(--accent);color:#0b0e14;border:none;border-radius:6px;padding:8px 16px;font-family:var(--mono);font-size:13px;font-weight:700;cursor:pointer}
 .btn:hover{filter:brightness(1.1)}
@@ -489,13 +497,18 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
         <label class="sw" title="Оранжевый"><input type="radio" name="set-accent-presets" value="#ffa657"/><span class="sw-dot" style="--sw:#ffa657"></span></label>
         <label class="sw" title="Красный"><input type="radio" name="set-accent-presets" value="#ff7b72"/><span class="sw-dot" style="--sw:#ff7b72"></span></label>
         <label class="sw" title="Розовый"><input type="radio" name="set-accent-presets" value="#ff7eb6"/><span class="sw-dot" style="--sw:#ff7eb6"></span></label>
-        <label class="sw-custom" title="Произвольный цвет">
-          <input type="color" id="set-accent-picker" value="#3fb950"/>
-          <span class="sw-dot sw-dot-custom" id="picker-dot"></span>
-        </label>
-        <button type="button" class="btn mini" id="set-accent-ok" title="Применить выбранный цвет">OK</button>
+        <div class="custom-pick" title="Произвольный цвет">
+          <div class="cp-row">
+            <input type="text" id="set-accent-hex" class="cp-hex" maxlength="7" spellcheck="false" aria-label="HEX-код цвета" value="#3fb950"/>
+            <span class="cp-swatch" id="cp-swatch"></span>
+          </div>
+          <label class="cp-chan">R<input type="range" id="cp-r" class="cp-range ch-r" min="0" max="255" value="63"/></label>
+          <label class="cp-chan">G<input type="range" id="cp-g" class="cp-range ch-g" min="0" max="255" value="185"/></label>
+          <label class="cp-chan">B<input type="range" id="cp-b" class="cp-range ch-b" min="0" max="255" value="80"/></label>
+          <button type="button" class="btn mini" id="set-accent-ok" title="Применить выбранный цвет">OK</button>
+        </div>
       </div>
-      <span class="fld-hint">Цвет рамок, графиков, разделов и кнопок. Капля справа — произвольный цвет, OK фиксирует выбор.</span>
+      <span class="fld-hint">Цвет рамок, графиков и кнопок. HEX-код или ползунки R/G/B, затем OK.</span>
     </div>
     <div class="modal-actions">
       <button class="btn ghost" id="set-cancel">Отмена</button>
@@ -644,21 +657,42 @@ function applyAppearance(theme,accent){
   if(theme)applyTheme(theme);
   if(accent)applyAccent(accent);
 }
+// hex <-> rgb helpers
+function hexToRgb(hex){
+  const m=/^#([0-9a-f]{6})$/i.exec(hex||'');
+  if(!m)return null;
+  const n=parseInt(m[1],16);
+  return [(n>>16)&255,(n>>8)&255,n&255];
+}
+function rgbToHex(r,g,b){
+  return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+// push a hex into the custom picker controls (hex field + R/G/B sliders + swatch)
+function pickerSetHex(hex,updatePresets){
+  const rgb=hexToRgb(hex);
+  if(!rgb)return;
+  const [r,g,b]=rgb;
+  $('set-accent-hex').value=hex.toLowerCase();
+  $('cp-r').value=r;$('cp-g').value=g;$('cp-b').value=b;
+  $('cp-swatch').style.background=hex.toLowerCase();
+  if(updatePresets!==false){
+    document.querySelectorAll('input[name=set-accent-presets]').forEach(x=>{
+      x.checked=(x.value.toLowerCase()===hex.toLowerCase());
+    });
+  }
+}
+// read the currently staged hex from the custom picker (validates)
+function pickerGetHex(){
+  const h=$('set-accent-hex').value.trim().toLowerCase();
+  if(/^#[0-9a-f]{6}$/.test(h))return h;
+  if(/^[0-9a-f]{6}$/.test(h))return '#'+h;
+  return null;
+}
 // reflect current accent onto modal controls (preset radio or custom picker)
 function accentControlsSync(hex){
-  const h=(hex||'').toLowerCase();
-  const picker=$('set-accent-picker');
-  const customLbl=picker.closest('.sw-custom');
-  if(PRESET_HEXES.includes(h)){
-    const r=document.querySelector('input[name=set-accent-presets][value="'+h+'"]');
-    if(r)r.checked=true;
-    if(picker)picker.value=h;
-    if(customLbl)customLbl.classList.remove('active');
-  }else{
-    document.querySelectorAll('input[name=set-accent-presets]').forEach(x=>x.checked=false);
-    if(picker)picker.value=h;
-    if(customLbl)customLbl.classList.add('active');
-  }
+  const h=normAccent(hex);
+  if(!h)return;
+  pickerSetHex(h,true);
 }
 mqDark.addEventListener('change',()=>{if(curTheme==='system')applyTheme('system');});
 function themeRadio(val){const r=document.querySelector('input[name=set-theme][value="'+val+'"]');if(r)r.checked=true;}
@@ -677,35 +711,43 @@ $('settings-btn').onclick=e=>{e.preventDefault();openSettings();};
 $('set-cancel').onclick=closeSettings;
 modal.onclick=e=>{if(e.target===modal)closeSettings();};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!modal.hidden)closeSettings();});
-// preset swatches drive the picker value; picking a preset clears "custom"
+// preset swatch: fill the custom picker with that hex (but do NOT override slider-sync)
 document.querySelectorAll('input[name=set-accent-presets]').forEach(r=>{
-  r.onchange=()=>{
-    $('set-accent-picker').value=r.value;
-    const cu=$('set-accent-picker').closest('.sw-custom');
-    if(cu)cu.classList.remove('active');
-  };
+  r.onchange=()=>{ pickerSetHex(r.value,false); };
 });
-// custom picker clears preset radios and marks itself active (pending, not applied)
-$('set-accent-picker').oninput=function(){
-  document.querySelectorAll('input[name=set-accent-presets]').forEach(x=>x.checked=false);
-  this.closest('.sw-custom').classList.add('active');
-};
-// OK confirms the picked color: applies it to the page immediately and clears pending.
-// The shared "Save" button additionally persists it to config.json.
-$('set-accent-ok').onclick=function(){
-  const hex=$('set-accent-picker').value;
-  if(!/^#[0-9a-fA-F]{6}$/.test(hex))return;
-  applyAccent(hex);
-  const cu=$('set-accent-picker').closest('.sw-custom');
-  if(cu)cu.classList.remove('active');
+// R/G/B sliders: update hex field + swatch live (no apply to page yet)
+function slidersChanged(){
+  const r=+$('cp-r').value,g=+$('cp-g').value,b=+$('cp-b').value;
+  const hex=rgbToHex(r,g,b);
+  $('set-accent-hex').value=hex;
+  $('cp-swatch').style.background=hex;
   document.querySelectorAll('input[name=set-accent-presets]').forEach(x=>{
-    x.checked=(x.value.toLowerCase()===hex.toLowerCase());
+    x.checked=(x.value.toLowerCase()===hex);
   });
+}
+['cp-r','cp-g','cp-b'].forEach(id=>{ $(id).oninput=slidersChanged; });
+// hex field: validate + sync sliders/swatch on blur
+$('set-accent-hex').onblur=function(){
+  const h=this.value.trim().toLowerCase();
+  let norm=h;
+  if(/^#[0-9a-f]{6}$/.test(norm)){}
+  else if(/^[0-9a-f]{6}$/.test(norm))norm='#'+norm;
+  else{ this.value=curAccent; return; }
+  const rgb=hexToRgb(norm);
+  if(rgb){ $('cp-r').value=rgb[0];$('cp-g').value=rgb[1];$('cp-b').value=rgb[2];
+           $('cp-swatch').style.background=norm;
+           document.querySelectorAll('input[name=set-accent-presets]').forEach(x=>{x.checked=(x.value.toLowerCase()===norm);}); }
 };
-// helper: read the currently-selected accent hex from modal controls
+// OK: apply the staged hex to the page immediately (Save persists separately)
+$('set-accent-ok').onclick=function(){
+  const hex=pickerGetHex();
+  if(!hex)return;
+  applyAccent(hex);
+  pickerSetHex(hex,false);
+};
+// helper: read the currently-staged accent hex from modal controls
 function selectedAccentHex(){
-  const p=$('set-accent-picker');
-  return (p&&/^#[0-9a-fA-F]{6}$/.test(p.value))?p.value.toLowerCase():'#3fb950';
+  return pickerGetHex()||curAccent;
 }
 $('set-save').onclick=async()=>{
   const v=parseFloat($('set-interval').value);
