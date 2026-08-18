@@ -328,6 +328,10 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .dot.off{background:var(--err);box-shadow:0 0 8px var(--err)}
 .st-online{color:var(--accent);font-weight:700}
 .st-offline{color:var(--err);font-weight:700}
+.pause-btn{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 5px;margin-left:2px;border-radius:5px;color:var(--accent);cursor:pointer;user-select:none;font-size:10px;letter-spacing:-1px;border:1px solid transparent}
+.pause-btn:hover{background:var(--border);border-color:var(--border)}
+.pause-btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.pause-btn.paused{color:var(--warn)}
 .dim{color:var(--dim)}
 .mono-model{color:var(--cyan);font-weight:700}
 .sep{color:var(--dim)}
@@ -397,6 +401,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
   <div class="row1">
     <div class="dot" id="dot" title="Состояние связи с vLLM-сервером. Зелёный = /metrics доступен, красный = сервер недоступен или ошибка опроса."></div>
     <span class="st-online" id="hdr-status" title="ONLINE — vLLM-сервер отвечает на запросы /metrics. OFFLINE — связь потеряна.">ONLINE</span>
+    <span class="pause-btn" id="pause-btn" title="Пауза/продолжить авто-обновление" tabindex="0">&#10074;&#10074;</span>
     <span class="sep dim">·</span>
     <span class="dim" id="url" title="Базовый URL vLLM-сервера, с которого дашборд опрашивает Prometheus-метрики (endpoint /metrics).">—</span>
     <span class="sep dim">·</span>
@@ -458,7 +463,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
   </div>
 </div>
 
-<div class="footer">updates every <span id="iv2">?</span>s · click dot to toggle auto-refresh · <a href="#" id="settings-btn" title="Открыть настройки (интервал обновления)">⚙ настройки</a></div>
+<div class="footer">updates every <span id="iv2">?</span>s · <a href="#" id="settings-btn" title="Открыть настройки (интервал, тема, акцентный цвет)">⚙ настройки</a></div>
 
 <div class="modal-backdrop" id="settings-modal" hidden>
   <div class="modal">
@@ -594,7 +599,18 @@ async function tick(){
     last=d;
   }catch(e){$('hdr-status').textContent='ERROR';$('hdr-status').className='st-offline';$('dot').className='dot off';}
 }
-$('dot').onclick=()=>{auto=!auto;if(auto)loop();};
+function setAuto(run){
+  auto=run;
+  const btn=$('pause-btn');
+  if(btn){
+    btn.innerHTML=run?'&#10074;&#10074;':'&#9654;';
+    btn.classList.toggle('paused',!run);
+    btn.title=run?'Пауза авто-обновления':'Возобновить авто-обновление';
+  }
+  if(run)loop();
+}
+$('pause-btn').onclick=()=>setAuto(!auto);
+$('pause-btn').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setAuto(!auto);}};
 $('iv').textContent=curInterval;$('iv2').textContent=curInterval;
 function loop(){if(!auto)return;tick().then(()=>setTimeout(loop,curInterval*1000));}
 
