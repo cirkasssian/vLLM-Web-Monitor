@@ -298,25 +298,14 @@ PAGE_HTML = """<!doctype html>
   --shadow:rgba(0,0,0,.5);
   --mono:'JetBrains Mono','SF Mono',Menlo,Consolas,'DejaVu Sans Mono',monospace;
 }
-/* accent drives border, bars, section labels, buttons, status dot */
+/* accent: default green; overridden at runtime via inline --accent on <html> */
 :root{ --accent:#3fb950; }
-[data-accent="blue"]   { --accent:#58a6ff; }
-[data-accent="purple"] { --accent:#bc8cff; }
-[data-accent="orange"] { --accent:#ffa657; }
-[data-accent="red"]    { --accent:#ff7b72; }
-[data-accent="pink"]   { --accent:#ff7eb6; }
 [data-theme="light"]{
   --bg:#f4f6f8; --panel:#ffffff; --fg:#1b2733;
   --dim:#6b7785; --white:#0b1220;
   --cyan:#0e7490; --warn:#b7791f; --err:#d64545;
   --shadow:rgba(0,0,0,.15);
 }
-[data-theme="light"][data-accent="green"] { --accent:#2ea043; }
-[data-theme="light"][data-accent="blue"]   { --accent:#1f6feb; }
-[data-theme="light"][data-accent="purple"] { --accent:#8250df; }
-[data-theme="light"][data-accent="orange"] { --accent:#bc4c00; }
-[data-theme="light"][data-accent="red"]    { --accent:#cf222e; }
-[data-theme="light"][data-accent="pink"]   { --accent:#bf3989; }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px;line-height:1.35;padding:18px}
 .wrap{max-width:1500px;margin:0 auto}
@@ -388,6 +377,11 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .sw-dot{display:block;width:26px;height:26px;border-radius:50%;background:var(--sw);border:2px solid transparent;box-shadow:0 0 0 2px var(--bg) inset}
 .sw input:checked+.sw-dot{border-color:var(--fg);transform:scale(1.08)}
 .sw:hover .sw-dot{filter:brightness(1.12)}
+.sw-custom{position:relative;display:inline-block}
+.sw-custom input[type=color]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;margin:0}
+.sw-dot-custom{display:block;width:26px;height:26px;border-radius:50%;background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red);border:2px solid transparent;box-shadow:0 0 0 2px var(--bg) inset;overflow:hidden}
+.sw-dot-custom::after{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--accent)}
+.sw-custom.active .sw-dot-custom{border-color:var(--fg);transform:scale(1.08)}
 .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
 .btn{background:var(--accent);color:#0b0e14;border:none;border-radius:6px;padding:8px 16px;font-family:var(--mono);font-size:13px;font-weight:700;cursor:pointer}
 .btn:hover{filter:brightness(1.1)}
@@ -488,14 +482,18 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
     <div class="fld">
       <span class="fld-lbl">Акцентный цвет</span>
       <div class="swatches" id="set-accent-swatches">
-        <label class="sw" title="Зелёный"><input type="radio" name="set-accent" value="green"/><span class="sw-dot" style="--sw:#3fb950"></span></label>
-        <label class="sw" title="Синий"><input type="radio" name="set-accent" value="blue"/><span class="sw-dot" style="--sw:#58a6ff"></span></label>
-        <label class="sw" title="Фиолетовый"><input type="radio" name="set-accent" value="purple"/><span class="sw-dot" style="--sw:#bc8cff"></span></label>
-        <label class="sw" title="Оранжевый"><input type="radio" name="set-accent" value="orange"/><span class="sw-dot" style="--sw:#ffa657"></span></label>
-        <label class="sw" title="Красный"><input type="radio" name="set-accent" value="red"/><span class="sw-dot" style="--sw:#ff7b72"></span></label>
-        <label class="sw" title="Розовый"><input type="radio" name="set-accent" value="pink"/><span class="sw-dot" style="--sw:#ff7eb6"></span></label>
+        <label class="sw" title="Зелёный"><input type="radio" name="set-accent-presets" value="#3fb950"/><span class="sw-dot" style="--sw:#3fb950"></span></label>
+        <label class="sw" title="Синий"><input type="radio" name="set-accent-presets" value="#58a6ff"/><span class="sw-dot" style="--sw:#58a6ff"></span></label>
+        <label class="sw" title="Фиолетовый"><input type="radio" name="set-accent-presets" value="#bc8cff"/><span class="sw-dot" style="--sw:#bc8cff"></span></label>
+        <label class="sw" title="Оранжевый"><input type="radio" name="set-accent-presets" value="#ffa657"/><span class="sw-dot" style="--sw:#ffa657"></span></label>
+        <label class="sw" title="Красный"><input type="radio" name="set-accent-presets" value="#ff7b72"/><span class="sw-dot" style="--sw:#ff7b72"></span></label>
+        <label class="sw" title="Розовый"><input type="radio" name="set-accent-presets" value="#ff7eb6"/><span class="sw-dot" style="--sw:#ff7eb6"></span></label>
+        <label class="sw-custom" title="Произвольный цвет">
+          <input type="color" id="set-accent-picker" value="#3fb950"/>
+          <span class="sw-dot sw-dot-custom" id="picker-dot"></span>
+        </label>
       </div>
-      <span class="fld-hint">Цвет рамок, графиков, разделов и кнопок.</span>
+      <span class="fld-hint">Цвет рамок, графиков, разделов и кнопок. Капля справа — произвольный цвет.</span>
     </div>
     <div class="modal-actions">
       <button class="btn ghost" id="set-cancel">Отмена</button>
@@ -617,32 +615,58 @@ $('pause-btn').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault()
 $('iv').textContent=curInterval;$('iv2').textContent=curInterval;
 function loop(){if(!auto)return;tick().then(()=>setTimeout(loop,curInterval*1000));}
 
-/* ---- appearance: theme + accent ---- */
-let curTheme='system', curAccent='green';
+/* ---- appearance: theme + accent (accent is any hex) ---- */
+let curTheme='system', curAccent='#3fb950';
+const PRESET_HEXES=['#3fb950','#58a6ff','#bc8cff','#ffa657','#ff7b72','#ff7eb6'];
+const LEGACY_ACCENT={'green':'#3fb950','blue':'#58a6ff','purple':'#bc8cff','orange':'#ffa657','red':'#ff7b72','pink':'#ff7eb6'};
+function normAccent(v){
+  if(typeof v!=='string')return null;
+  v=v.trim().toLowerCase();
+  if(LEGACY_ACCENT[v])return LEGACY_ACCENT[v];
+  if(/^#[0-9a-f]{6}$/.test(v))return v;
+  return null;
+}
 const mqDark=window.matchMedia('(prefers-color-scheme: dark)');
 function applyTheme(mode){
   curTheme=mode;
   const eff=(mode==='light')?'light':(mode==='dark')?'dark':(mqDark.matches?'dark':'light');
   document.documentElement.setAttribute('data-theme',eff);
 }
-function applyAccent(color){
-  curAccent=color;
-  document.documentElement.setAttribute('data-accent',color);
+function applyAccent(raw){
+  const hex=normAccent(raw);
+  if(!hex)return;
+  curAccent=hex;
+  document.documentElement.style.setProperty('--accent',hex);
 }
 function applyAppearance(theme,accent){
   if(theme)applyTheme(theme);
   if(accent)applyAccent(accent);
 }
+// reflect current accent onto modal controls (preset radio or custom picker)
+function accentControlsSync(hex){
+  const h=(hex||'').toLowerCase();
+  const picker=$('set-accent-picker');
+  const customLbl=picker.closest('.sw-custom');
+  if(PRESET_HEXES.includes(h)){
+    const r=document.querySelector('input[name=set-accent-presets][value="'+h+'"]');
+    if(r)r.checked=true;
+    if(picker)picker.value=h;
+    if(customLbl)customLbl.classList.remove('active');
+  }else{
+    document.querySelectorAll('input[name=set-accent-presets]').forEach(x=>x.checked=false);
+    if(picker)picker.value=h;
+    if(customLbl)customLbl.classList.add('active');
+  }
+}
 mqDark.addEventListener('change',()=>{if(curTheme==='system')applyTheme('system');});
 function themeRadio(val){const r=document.querySelector('input[name=set-theme][value="'+val+'"]');if(r)r.checked=true;}
-function accentRadio(val){const r=document.querySelector('input[name=set-accent][value="'+val+'"]');if(r)r.checked=true;}
 
 /* ---- settings modal ---- */
 const modal=$('settings-modal');
 function openSettings(){
   $('set-interval').value=(last&&last.interval)?last.interval:curInterval;
   themeRadio((last&&last.theme)?last.theme:curTheme);
-  accentRadio((last&&last.accent)?last.accent:curAccent);
+  accentControlsSync((last&&last.accent)?last.accent:curAccent);
   $('set-msg').textContent='';$('set-msg').className='modal-msg';
   modal.hidden=false;setTimeout(()=>$('set-interval').focus(),30);
 }
@@ -651,10 +675,28 @@ $('settings-btn').onclick=e=>{e.preventDefault();openSettings();};
 $('set-cancel').onclick=closeSettings;
 modal.onclick=e=>{if(e.target===modal)closeSettings();};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!modal.hidden)closeSettings();});
+// preset swatches drive the picker value; picking a preset clears "custom"
+document.querySelectorAll('input[name=set-accent-presets]').forEach(r=>{
+  r.onchange=()=>{
+    $('set-accent-picker').value=r.value;
+    const cu=$('set-accent-picker').closest('.sw-custom');
+    if(cu)cu.classList.remove('active');
+  };
+});
+// custom picker clears preset radios and marks itself active
+$('set-accent-picker').oninput=function(){
+  document.querySelectorAll('input[name=set-accent-presets]').forEach(x=>x.checked=false);
+  this.closest('.sw-custom').classList.add('active');
+};
+// helper: read the currently-selected accent hex from modal controls
+function selectedAccentHex(){
+  const p=$('set-accent-picker');
+  return (p&&/^#[0-9a-fA-F]{6}$/.test(p.value))?p.value.toLowerCase():'#3fb950';
+}
 $('set-save').onclick=async()=>{
   const v=parseFloat($('set-interval').value);
   const t=(document.querySelector('input[name=set-theme]:checked')||{}).value||'system';
-  const a=(document.querySelector('input[name=set-accent]:checked')||{}).value||'green';
+  const a=selectedAccentHex();
   const msg=$('set-msg');
   if(isNaN(v)||v<1||v>300){msg.textContent='Интервал должен быть 1–300 сек.';msg.className='modal-msg err';return;}
   try{
@@ -700,7 +742,7 @@ class Handler(BaseHTTPRequestHandler):
             payload = {'online': bool(snap), 'ts': time.time(), 'url': self.vllm_url,
                        'interval': self.poll_interval,
                        'theme': settings.get('theme', 'system'),
-                       'accent': settings.get('accent', 'green')}
+                       'accent': settings.get('accent', '#3fb950')}
             if snap:
                 payload.update(snap)
             else:
@@ -744,9 +786,11 @@ class Handler(BaseHTTPRequestHandler):
                 save_setting('theme', th)
                 result['theme'] = th
             if 'accent' in data:
-                ac = data['accent']
-                if ac not in ('green', 'blue', 'purple', 'orange', 'red', 'pink'):
-                    raise ValueError('invalid accent')
+                ac = str(data['accent']).lower()
+                if not re.fullmatch(r'#?[0-9a-f]{6}', ac):
+                    raise ValueError('accent must be a hex color (#rrggbb)')
+                if not ac.startswith('#'):
+                    ac = '#' + ac
                 save_setting('accent', ac)
                 result['accent'] = ac
             self.send_response(200)
