@@ -371,6 +371,8 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .fld-lbl{display:block;color:var(--fg);font-size:12px;margin-bottom:6px}
 .fld input[type=number]{width:100%;background:var(--bg);border:1px solid var(--accent);border-radius:6px;color:var(--fg);font-family:var(--mono);font-size:14px;padding:8px 10px}
 .fld input:focus{outline:none;border-color:var(--accent)}
+.fld select{width:100%;background:var(--bg);border:1px solid var(--accent);border-radius:6px;color:var(--fg);font-family:var(--mono);font-size:14px;padding:8px 10px;cursor:pointer}
+.fld select:focus{outline:none;border-color:var(--accent)}
 .fld-hint{display:block;color:var(--dim);font-size:11px;margin-top:5px}
 .seg{display:flex;gap:4px;background:var(--bg);border:1px solid var(--accent);border-radius:8px;padding:3px}
 .seg-opt{flex:1;position:relative}
@@ -515,10 +517,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
     </div>
     <div class="fld">
       <span class="fld-lbl" data-i18n="set_lang_lbl">Язык интерфейса</span>
-      <div class="seg" id="set-lang-seg">
-        <label class="seg-opt"><input type="radio" name="set-lang" value="ru" /><span>Русский</span></label>
-        <label class="seg-opt"><input type="radio" name="set-lang" value="en" checked /><span>English</span></label>
-      </div>
+      <select id="set-lang"></select>
     </div>
     <div class="fld">
       <span class="fld-lbl" data-i18n="set_accent_lbl">Акцентный цвет</span>
@@ -566,7 +565,7 @@ const $=id=>document.getElementById(id);
 let auto=true,last=null;
 let curInterval=__INTERVAL__;
 
-/* ---- i18n: RU (default) / EN ---- */
+/* ---- i18n: RU / EN translations ---- */
 const I18N={
 ru:{
 tip_dot:'Состояние связи с vLLM-сервером. Зелёный = /metrics доступен, красный = сервер недоступен или ошибка опроса.',
@@ -701,6 +700,7 @@ msg_interval_invalid:'Interval must be 1–300 seconds.',
 title_tag:'vllm-monitor · vLLM Health Dashboard'
 }};
 let curLang='en';
+const LANG_NAMES={ru:'Русский',en:'English'};
 function t(key){const d=I18N[curLang]||{};return (key in d)?d[key]:(I18N.en[key]??key);}
 function updateModelBarTips(){
   const bar=$('modelbar');if(!bar)return;
@@ -915,11 +915,21 @@ function themeRadio(val){const r=document.querySelector('input[name=set-theme][v
 
 /* ---- settings modal ---- */
 const modal=$('settings-modal');
-function langRadio(val){const r=document.querySelector('input[name=set-lang][value="'+val+'"]');if(r)r.checked=true;}
+function populateLangSelect(){
+  const sel=$('set-lang');
+  if(!sel)return;
+  sel.innerHTML='';
+  Object.keys(I18N).forEach(code=>{
+    const o=document.createElement('option');
+    o.value=code;o.textContent=LANG_NAMES[code]||code.toUpperCase();
+    sel.appendChild(o);
+  });
+}
+function langSelect(val){const sel=$('set-lang');if(sel)sel.value=val;}
 function openSettings(){
   $('set-interval').value=(last&&last.interval)?last.interval:curInterval;
   themeRadio((last&&last.theme)?last.theme:curTheme);
-  langRadio(last&&last.lang?last.lang:curLang);
+  langSelect(last&&last.lang?last.lang:curLang);
   accentControlsSync((last&&last.accent)?last.accent:curAccent);
   $('set-msg').textContent='';$('set-msg').className='modal-msg';
   modal.hidden=false;setTimeout(()=>$('set-interval').focus(),30);
@@ -1045,7 +1055,7 @@ function selectedAccentHex(){
 $('set-save').onclick=async()=>{
   const v=parseFloat($('set-interval').value);
   const tv=(document.querySelector('input[name=set-theme]:checked')||{}).value||'system';
-  const lg=(document.querySelector('input[name=set-lang]:checked')||{}).value||curLang;
+  const lg=$('set-lang').value||curLang;
   const a=selectedAccentHex();
   const msg=$('set-msg');
   if(isNaN(v)||v<1||v>300){msg.textContent=t('msg_interval_invalid');msg.className='modal-msg err';return;}
@@ -1061,8 +1071,10 @@ $('set-save').onclick=async()=>{
     }else{msg.textContent=t('msg_error_prefix')+' '+(j.error||r.status);msg.className='modal-msg err';}
   }catch(e){msg.textContent=t('msg_net_prefix')+' '+e.message;msg.className='modal-msg err';}
 };
-// apply persisted theme+accent ASAP (before first paint of data)
-fetch('/api/status').then(r=>r.json()).then(d=>{applyAppearance(d.theme,d.accent);if(d.lang)curLang=d.lang;applyLang(d.lang);}).catch(()=>{});
+// populate the language dropdown from available I18N locales
+populateLangSelect();
+// apply persisted theme+accent+lang ASAP (before first paint of data)
+fetch('/api/status').then(r=>r.json()).then(d=>{applyAppearance(d.theme,d.accent);if(d.lang)curLang=d.lang;applyLang(d.lang);langSelect(d.lang||'en');}).catch(()=>{});
 loop();
 </script></body></html>
 """
