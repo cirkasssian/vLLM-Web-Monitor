@@ -501,6 +501,10 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 <div class="modal-backdrop" id="settings-modal" hidden>
   <div class="modal">
     <div class="modal-head" data-i18n="set_head">Настройки</div>
+    <div class="fld">
+      <span class="fld-lbl" data-i18n="set_lang_lbl">Язык интерфейса</span>
+      <select id="set-lang"></select>
+    </div>
     <label class="fld">
       <span class="fld-lbl" data-i18n="set_interval_lbl">Интервал обновления, сек</span>
       <input type="number" id="set-interval" min="1" max="300" step="0.5" />
@@ -514,10 +518,6 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
         <label class="seg-opt"><input type="radio" name="set-theme" value="light" /><span data-i18n="theme_light">Светлая</span></label>
       </div>
       <span class="fld-hint" data-i18n="set_theme_hint">«Системная» следует за prefers-color-scheme ОС.</span>
-    </div>
-    <div class="fld">
-      <span class="fld-lbl" data-i18n="set_lang_lbl">Язык интерфейса</span>
-      <select id="set-lang"></select>
     </div>
     <div class="fld">
       <span class="fld-lbl" data-i18n="set_accent_lbl">Акцентный цвет</span>
@@ -552,8 +552,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
       </div>
     </div>
     <div class="modal-actions">
-      <button class="btn ghost" id="set-cancel" data-i18n="btn_cancel">Отмена</button>
-      <button class="btn" id="set-save" data-i18n="btn_save">Сохранить</button>
+      <button class="btn" id="set-cancel" data-i18n="btn_cancel">Закрыть</button>
     </div>
     <div class="modal-msg" id="set-msg"></div>
   </div>
@@ -622,13 +621,9 @@ theme_light:'Светлая',
 set_theme_hint:'«Системная» следует за prefers-color-scheme ОС.',
 set_accent_lbl:'Акцентный цвет',
 set_accent_hint:'Цвет рамок, графиков и кнопок.',
-btn_cancel:'Отмена',
-btn_save:'Сохранить',
-msg_saved_prefix:'Сохранено:',
-msg_saved_mid:'с, тема:',
-msg_saved_color:', цвет:',
-msg_saved_suffix:'. Применяется сразу.',
-msg_error_prefix:'Ошибка:',
+ btn_cancel:'Закрыть',
+
+ msg_error_prefix:'Ошибка:',
 msg_net_prefix:'Сеть:',
 msg_interval_invalid:'Интервал должен быть 1–300 сек.',
 title_tag:'vllm-monitor · vLLM Health Dashboard'
@@ -688,13 +683,9 @@ theme_light:'Light',
 set_theme_hint:'“System” follows the OS prefers-color-scheme.',
 set_accent_lbl:'Accent color',
 set_accent_hint:'Color of borders, charts and buttons.',
-btn_cancel:'Cancel',
-btn_save:'Save',
-msg_saved_prefix:'Saved:',
-msg_saved_mid:'s, theme:',
-msg_saved_color:', color:',
-msg_saved_suffix:'. Applied immediately.',
-msg_error_prefix:'Error:',
+ btn_cancel:'Close',
+
+ msg_error_prefix:'Error:',
 msg_net_prefix:'Network:',
 msg_interval_invalid:'Interval must be 1–300 seconds.',
 title_tag:'vllm-monitor · vLLM Health Dashboard'
@@ -939,9 +930,48 @@ $('settings-btn').onclick=e=>{e.preventDefault();openSettings();};
 $('set-cancel').onclick=closeSettings;
 modal.onclick=e=>{if(e.target===modal)closeSettings();};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!modal.hidden)closeSettings();});
-// preset swatch: fill the custom picker + rainbow center with that hex, clear active-cust
+/* ---- apply-on-change persistence: every control saves immediately, no Save button ---- */
+async function saveField(patch){
+  const msg=$('set-msg');
+  try{
+    const r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)});
+    const j=await r.json();
+    if(j.ok){ msg.textContent=''; msg.className='modal-msg'; }
+    else { msg.textContent=t('msg_error_prefix')+' '+(j.error||r.status); msg.className='modal-msg err'; }
+  }catch(e){ msg.textContent=t('msg_net_prefix')+' '+e.message; msg.className='modal-msg err'; }
+  if(msg.className.indexOf('err')>-1){ clearTimeout(saveField._t); saveField._t=setTimeout(()=>{msg.textContent='';msg.className='modal-msg';},1500); }
+}
+// interval: fires on blur/enter; validates 1..300, reverts + warns on bad value
+$('set-interval').addEventListener('change',()=>{
+  const inp=$('set-interval');
+  const v=parseFloat(inp.value);
+  if(isNaN(v)||v<1||v>300){ inp.value=curInterval; flashMsg(t('msg_interval_invalid'),'err'); return; }
+  curInterval=v; $('iv').textContent=v;
+  saveField({interval:v});
+});
+function flashMsg(text,kind){
+  const msg=$('set-msg');
+  msg.textContent=text;msg.className='modal-msg '+(kind||'');
+  clearTimeout(saveField._t);saveField._t=setTimeout(()=>{msg.textContent='';msg.className='modal-msg';},1500);
+}
+// theme radio: apply to page live + persist
+document.querySelectorAll('input[name=set-theme]').forEach(r=>{
+  r.addEventListener('change',()=>{
+    applyTheme(r.value); updateThemeIcon();
+    saveField({theme:r.value});
+  });
+});
+// language select: apply to page live + persist
+$('set-lang').addEventListener('change',()=>{
+  applyLang($('set-lang').value);
+  saveField({lang:$('set-lang').value});
+});
+// accent preset swatch: fill picker + rainbow center, apply to page live + persist
 document.querySelectorAll('input[name=set-accent-presets]').forEach(r=>{
-  r.onchange=()=>{ pickerSetHex(r.value,false); rcCenterSet(r.value); };
+  r.addEventListener('change',()=>{
+    pickerSetHex(r.value,false); rcCenterSet(r.value); applyAccent(r.value);
+    saveField({accent:r.value});
+  });
 });
 // update the rainbow button's center disc + active-cust outline (when hex is not a preset)
 function rcCenterSet(hex){
@@ -1039,37 +1069,15 @@ $('set-accent-hex').onblur=function(){
            $('cp-swatch').style.background=norm;
            document.querySelectorAll('input[name=set-accent-presets]').forEach(x=>{x.checked=(x.value.toLowerCase()===norm);}); }
 };
-// OK: confirm the staged hex (syncs controls + rainbow center) and closes the popup.
-// The actual page change happens on the shared "Save" button.
+// OK: apply the staged hex to the page immediately + persist, then close the popup
 $('set-accent-ok').onclick=function(){
   const hex=pickerGetHex();
   if(!hex)return;
   pickerSetHex(hex,false);
   rcCenterSet(hex);
+  applyAccent(hex);
+  saveField({accent:hex});
   closeCpPop();
-};
-// helper: read the currently-staged accent hex from modal controls
-function selectedAccentHex(){
-  return pickerGetHex()||curAccent;
-}
-$('set-save').onclick=async()=>{
-  const v=parseFloat($('set-interval').value);
-  const tv=(document.querySelector('input[name=set-theme]:checked')||{}).value||'system';
-  const lg=$('set-lang').value||curLang;
-  const a=selectedAccentHex();
-  const msg=$('set-msg');
-  if(isNaN(v)||v<1||v>300){msg.textContent=t('msg_interval_invalid');msg.className='modal-msg err';return;}
-  try{
-    const r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({interval:v,theme:tv,lang:lg,accent:a})});
-    const j=await r.json();
-    if(j.ok){
-      applyAppearance(j.theme,j.accent);
-      if(j.lang)applyLang(j.lang);
-      msg.textContent=t('msg_saved_prefix')+' '+j.interval+' '+t('msg_saved_mid')+' '+j.theme+t('msg_saved_color')+' '+j.accent+t('msg_saved_suffix');msg.className='modal-msg ok';
-      curInterval=j.interval;curTheme=j.theme;curAccent=j.accent;if(j.lang)curLang=j.lang;$('iv').textContent=j.interval;
-      setTimeout(closeSettings,900);
-    }else{msg.textContent=t('msg_error_prefix')+' '+(j.error||r.status);msg.className='modal-msg err';}
-  }catch(e){msg.textContent=t('msg_net_prefix')+' '+e.message;msg.className='modal-msg err';}
 };
 // populate the language dropdown from available I18N locales
 populateLangSelect();
