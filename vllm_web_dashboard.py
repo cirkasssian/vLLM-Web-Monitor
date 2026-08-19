@@ -930,7 +930,25 @@ function closeSettings(){modal.hidden=true;}
 $('settings-btn').onclick=e=>{e.preventDefault();openSettings();};
 $('set-cancel').onclick=closeSettings;
 modal.onclick=e=>{if(e.target===modal)closeSettings();};
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!modal.hidden)closeSettings();});
+/* ---- global keyboard shortcuts: Space/P pause, T theme, L language, S settings ---- */
+const LANG_ORDER=Object.keys(I18N);
+function cycleLang(){
+  const i=LANG_ORDER.indexOf(curLang);
+  const nxt=LANG_ORDER[(i+1)%LANG_ORDER.length];
+  applyLang(nxt); langSelect(nxt);
+  fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lang:nxt})}).then(r=>r.json()).catch(()=>{});
+}
+document.addEventListener('keydown',e=>{
+  const tg=e.target;
+  if(tg&&(tg.tagName==='INPUT'||tg.tagName==='TEXTAREA'||tg.tagName==='SELECT'||tg.isContentEditable))return;
+  if(e.ctrlKey||e.metaKey||e.altKey)return;
+  const k=e.key.toLowerCase();
+  if(k==='escape'){if(!modal.hidden)closeSettings();return;}
+  if(e.code==='Space'||k==='p'){e.preventDefault();setAuto(!auto);}
+  else if(k==='t'){e.preventDefault();quickToggleTheme();}
+  else if(k==='l'){e.preventDefault();cycleLang();}
+  else if(k==='s'){e.preventDefault();openSettings();}
+});
 /* ---- apply-on-change persistence: every control saves immediately, no Save button ---- */
 async function saveField(patch){
   const msg=$('set-msg');
