@@ -434,7 +434,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
       <span class="sep dim">·</span>
       <span class="dim" id="url" data-i18n-title="tip_url">—</span>
       <span class="sep dim">·</span>
-      <span class="dim" data-i18n-title="tip_interval_hdr">refresh <span id="iv">?</span>s</span>
+      <span class="dim" data-i18n-title="tip_interval_hdr" data-i18n-html="refresh_hdr">refresh <span id="iv">?</span>s</span>
     </div>
     <div class="row2" id="modelbar">
       <span class="mono-model" id="model" data-i18n-title="tip_model">—</span>
@@ -446,52 +446,52 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
   </div>
 </div>
 
-<div class="sec"><div class="sec-label">Load</div>
+<div class="sec"><div class="sec-label" data-i18n="sec_load">Load</div>
   <div class="tiles t3">
-    <div class="tile" data-i18n-title="tip_running"><div class="lbl">Running</div><div class="val c-white" id="running">—</div></div>
-    <div class="tile" data-i18n-title="tip_queued"><div class="lbl">Queued</div><div class="val c-white" id="waiting">—</div></div>
-    <div class="tile" data-i18n-title="tip_preempted"><div class="lbl">Preemptions</div><div class="val c-white" id="preempted">—</div></div>
+    <div class="tile" data-i18n-title="tip_running"><div class="lbl" data-i18n="lbl_running">Running</div><div class="val c-white" id="running">—</div></div>
+    <div class="tile" data-i18n-title="tip_queued"><div class="lbl" data-i18n="lbl_queued">Queued</div><div class="val c-white" id="waiting">—</div></div>
+    <div class="tile" data-i18n-title="tip_preempted"><div class="lbl" data-i18n="lbl_preempted">Preemptions</div><div class="val c-white" id="preempted">—</div></div>
   </div>
 </div>
 
-<div class="sec"><div class="sec-label">Latency</div>
+<div class="sec"><div class="sec-label" data-i18n="sec_latency">Latency</div>
   <div class="tiles t4">
-    <div class="tile" data-i18n-title="tip_e2e"><div class="lbl">E2E Latency</div><div class="val" id="e2e">—</div></div>
-    <div class="tile" data-i18n-title="tip_ttft"><div class="lbl">TTFT</div><div class="val" id="ttft">—</div></div>
-    <div class="tile" data-i18n-title="tip_tpot"><div class="lbl">TPOT</div><div class="val" id="tpot">—</div></div>
-    <div class="tile" data-i18n-title="tip_queue"><div class="lbl">Queue Time</div><div class="val" id="queue">—</div></div>
+    <div class="tile" data-i18n-title="tip_e2e"><div class="lbl" data-i18n="lbl_e2e">E2E Latency</div><div class="val" id="e2e">—</div></div>
+    <div class="tile" data-i18n-title="tip_ttft"><div class="lbl" data-i18n="lbl_ttft">TTFT</div><div class="val" id="ttft">—</div></div>
+    <div class="tile" data-i18n-title="tip_tpot"><div class="lbl" data-i18n="lbl_tpot">TPOT</div><div class="val" id="tpot">—</div></div>
+    <div class="tile" data-i18n-title="tip_queue"><div class="lbl" data-i18n="lbl_qtime">Queue Time</div><div class="val" id="queue">—</div></div>
   </div>
 </div>
 
-<div class="sec"><div class="sec-label">Throughput &amp; Cache</div>
+<div class="sec"><div class="sec-label" data-i18n="sec_throughput">Throughput &amp; Cache</div>
   <div class="tiles t4">
-    <div class="tile" data-i18n-title="tip_ptok"><div class="lbl">Prompt Tokens/s</div><div class="val c-white" id="ptok">—</div></div>
-    <div class="tile" data-i18n-title="tip_gtok"><div class="lbl">Gen Tokens/s</div><div class="val c-white" id="gtok">—</div></div>
-    <div class="tile" data-i18n-title="tip_kv"><div class="lbl">GPU KV Cache</div><div class="val c-white" id="kv">—</div></div>
-    <div class="tile" data-i18n-title="tip_pcache"><div class="lbl">Prefix Cache Hit</div><div class="val c-white" id="pcache">—</div></div>
+    <div class="tile" data-i18n-title="tip_ptok"><div class="lbl" data-i18n="lbl_ptok">Prompt Tokens/s</div><div class="val c-white" id="ptok">—</div></div>
+    <div class="tile" data-i18n-title="tip_gtok"><div class="lbl" data-i18n="lbl_gtok">Gen Tokens/s</div><div class="val c-white" id="gtok">—</div></div>
+    <div class="tile" data-i18n-title="tip_kv"><div class="lbl" data-i18n="lbl_kv">GPU KV Cache</div><div class="val c-white" id="kv">—</div></div>
+    <div class="tile" data-i18n-title="tip_pcache"><div class="lbl" data-i18n="lbl_pcache">Prefix Cache Hit</div><div class="val c-white" id="pcache">—</div></div>
   </div>
 </div>
 
-<div class="sec"><div class="sec-label">Stats</div>
+<div class="sec"><div class="sec-label" data-i18n="sec_stats">Stats</div>
   <div class="tiles t3">
-    <div class="tile" data-i18n-title="tip_spec"><div class="lbl">Spec Accept (MTP)</div>
+    <div class="tile" data-i18n-title="tip_spec"><div class="lbl" data-i18n="lbl_spec">Spec Accept (MTP)</div>
       <div class="val sm" id="spec"><span class="l1">—</span><span class="l2" id="spec-sub"></span></div></div>
-    <div class="tile" data-i18n-title="tip_done"><div class="lbl">Completed</div>
+    <div class="tile" data-i18n-title="tip_done"><div class="lbl" data-i18n="lbl_completed">Completed</div>
       <div class="val sm" id="done"><span class="l1">—</span><span class="l2" id="done-sub"></span></div></div>
-    <div class="tile" data-i18n-title="tip_shape"><div class="lbl">Average Request</div>
+    <div class="tile" data-i18n-title="tip_shape"><div class="lbl" data-i18n="lbl_avgreq">Average Request</div>
       <div class="val sm" id="shape"><span class="l1">—</span><span class="l2" id="shape-sub"></span></div></div>
   </div>
 </div>
 
-<div class="sec"><div class="sec-label">History</div>
+<div class="sec"><div class="sec-label" data-i18n="sec_history">History</div>
   <div class="tiles t3">
-    <div class="tile spark" data-i18n-title="tip_hist_active"><div class="lbl">Active Requests</div>
+    <div class="tile spark" data-i18n-title="tip_hist_active"><div class="lbl" data-i18n="lbl_active">Active Requests</div>
       <div class="plot"><div class="yax"><span id="ax-active-top">0</span><span>0</span></div><div class="bars" id="ch-active"></div></div>
       <div class="cap" id="cap-active">current: 0</div></div>
-    <div class="tile spark" data-i18n-title="tip_hist_gen"><div class="lbl">Gen Tokens/s</div>
+    <div class="tile spark" data-i18n-title="tip_hist_gen"><div class="lbl" data-i18n="lbl_gtok">Gen Tokens/s</div>
       <div class="plot"><div class="yax"><span id="ax-gen-top">0</span><span>0</span></div><div class="bars" id="ch-gen"></div></div>
       <div class="cap" id="cap-gen">current: 0.0 tok/s</div></div>
-    <div class="tile spark" data-i18n-title="tip_hist_kv"><div class="lbl">GPU Cache %</div>
+    <div class="tile spark" data-i18n-title="tip_hist_kv"><div class="lbl" data-i18n="lbl_gpucache">GPU Cache %</div>
       <div class="plot"><div class="yax"><span id="ax-kv-top">0%</span><span>0</span></div><div class="bars" id="ch-kv"></div></div>
       <div class="cap" id="cap-kv">current: 0.0%</div></div>
   </div>
@@ -626,7 +626,43 @@ set_accent_hint:'Цвет рамок, графиков и кнопок.',
  msg_error_prefix:'Ошибка:',
 msg_net_prefix:'Сеть:',
 msg_interval_invalid:'Интервал должен быть 1–300 сек.',
-title_tag:'vllm-monitor · vLLM Health Dashboard'
+ title_tag:'vllm-monitor · vLLM Health Dashboard',
+ sec_load:'Нагрузка',
+ lbl_running:'В работе',
+ lbl_queued:'В очереди',
+ lbl_preempted:'Преэмпции',
+ sec_latency:'Латентность',
+ lbl_e2e:'E2E латентность',
+ lbl_ttft:'TTFT',
+ lbl_tpot:'TPOT',
+ lbl_qtime:'Время в очереди',
+ sec_throughput:'Пропускная способность и кэш',
+ lbl_ptok:'Токенов prompt/сек',
+ lbl_gtok:'Токенов gen/сек',
+ lbl_kv:'GPU KV-кэш',
+ lbl_pcache:'Попадания в префикс-кэш',
+ sec_stats:'Статистика',
+ lbl_spec:'Spec Accept (MTP)',
+ lbl_completed:'Завершено',
+ lbl_avgreq:'Средний запрос',
+ sec_history:'История',
+ lbl_active:'Активные запросы',
+ lbl_gpucache:'GPU-кэш %',
+ refresh_hdr:'обновление: <span id="iv">?</span> с',
+ cap_cur:'сейчас',
+ mb_kv:'kv',
+ mb_blks:'блоков',
+ mb_util:'util',
+ u_req:'req',
+ u_tok:'ток',
+ u_toks:'ток/с',
+ u_tokstep:'ток/шаг',
+ u_in:'вход',
+ u_out:'выход',
+ st_len:'длина',
+ st_err:'ошибки',
+ st_online:'ОНЛАЙН',
+ st_offline:'ОФФЛАЙН'
 },
 en:{
 tip_dot:'Connection status to the vLLM server. Green = /metrics reachable, red = server unreachable or polling error.',
@@ -688,7 +724,43 @@ set_accent_hint:'Color of borders, charts and buttons.',
  msg_error_prefix:'Error:',
 msg_net_prefix:'Network:',
 msg_interval_invalid:'Interval must be 1–300 seconds.',
-title_tag:'vllm-monitor · vLLM Health Dashboard'
+ title_tag:'vllm-monitor · vLLM Health Dashboard',
+ sec_load:'Load',
+ lbl_running:'Running',
+ lbl_queued:'Queued',
+ lbl_preempted:'Preemptions',
+ sec_latency:'Latency',
+ lbl_e2e:'E2E Latency',
+ lbl_ttft:'TTFT',
+ lbl_tpot:'TPOT',
+ lbl_qtime:'Queue Time',
+ sec_throughput:'Throughput &amp; Cache',
+ lbl_ptok:'Prompt Tokens/s',
+ lbl_gtok:'Gen Tokens/s',
+ lbl_kv:'GPU KV Cache',
+ lbl_pcache:'Prefix Cache Hit',
+ sec_stats:'Stats',
+ lbl_spec:'Spec Accept (MTP)',
+ lbl_completed:'Completed',
+ lbl_avgreq:'Average Request',
+ sec_history:'History',
+ lbl_active:'Active Requests',
+ lbl_gpucache:'GPU Cache %',
+ refresh_hdr:'refresh <span id="iv">?</span>s',
+ cap_cur:'current',
+ mb_kv:'kv',
+ mb_blks:'blks',
+ mb_util:'util',
+ u_req:'req',
+ u_tok:'tok',
+ u_toks:'tok/s',
+ u_tokstep:'tok/step',
+ u_in:'in',
+ u_out:'out',
+ st_len:'len',
+ st_err:'err',
+ st_online:'ONLINE',
+ st_offline:'OFFLINE'
 }};
 let curLang='en';
 const LANG_NAMES={ru:'Русский',en:'English'};
@@ -701,6 +773,7 @@ function updateModelBarTips(){
 function applyLang(lang){
   curLang=(lang in I18N)?lang:'en';
   document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.dataset.i18n;if(k in (I18N[curLang]||{}))el.textContent=t(k);});
+document.querySelectorAll('[data-i18n-html]').forEach(el=>{const k=el.dataset.i18nHtml;if(k in (I18N[curLang]||{}))el.innerHTML=t(k);});
   document.querySelectorAll('[data-i18n-title]').forEach(el=>{const k=el.dataset.i18nTitle;el.title=t(k);});
   document.querySelectorAll('[data-i18n-aria]').forEach(el=>{const k=el.dataset.i18nAria;el.setAttribute('aria-label',t(k));});
   const tt=document.querySelector('[data-i18n-title-tag]');if(tt)document.title=t('title_tag');
@@ -743,17 +816,17 @@ async function tick(){
     const r=await fetch('/api/status');const d=await r.json();
     if(!d.online){
       $('dot').className='dot off';
-      $('hdr-status').textContent='OFFLINE';$('hdr-status').className='st-offline';
+      $('hdr-status').textContent=t('st_offline');$('hdr-status').className='st-offline';
       $('url').textContent=d.url||'';return;}
     $('dot').className='dot';
-    $('hdr-status').textContent='ONLINE';$('hdr-status').className='st-online';
+    $('hdr-status').textContent=t('st_online');$('hdr-status').className='st-online';
     $('url').textContent=d.url||'';
     /* model bar */
     const mb=[];
     mb.push('<span class="mono-model" data-mtip="mdl_title" title="'+t('mdl_title')+'">'+(d.model_name||'unknown')+'</span>');
-    if(d.kv_dtype)mb.push('<span class="dim" data-mtip="tip_kv_dtype" title="'+t('tip_kv_dtype')+'">kv '+d.kv_dtype+'</span>');
-    if(d.num_blocks)mb.push('<span class="dim" data-mtip="tip_blks" title="'+t('tip_blks')+'">'+d.num_blocks+' blks</span>');
-    if(d.mem_util!=null)mb.push('<span class="dim" data-mtip="tip_util" title="'+t('tip_util')+'">util '+Math.round(d.mem_util*100)+'%</span>');
+    if(d.kv_dtype)mb.push('<span class="dim" data-mtip="tip_kv_dtype" title="'+t('tip_kv_dtype')+'">'+t('mb_kv')+' '+d.kv_dtype+'</span>');
+    if(d.num_blocks)mb.push('<span class="dim" data-mtip="tip_blks" title="'+t('tip_blks')+'">'+d.num_blocks+' '+t('mb_blks')+'</span>');
+    if(d.mem_util!=null)mb.push('<span class="dim" data-mtip="tip_util" title="'+t('tip_util')+'">'+t('mb_util')+' '+Math.round(d.mem_util*100)+'%</span>');
     $('modelbar').innerHTML=mb.join('<span class="sep dim">·</span>');
     /* load */
     setVal('running','c-white',Math.round(d.running||0)+'');
@@ -771,29 +844,28 @@ async function tick(){
     if(d.spec_accept_rate!=null){
       $('spec').querySelector('.l1').className='l1 c-white';
       $('spec').querySelector('.l1').textContent=(d.spec_accept_rate*100).toFixed(1)+'%';
-      $('spec-sub').textContent=d.spec_accept_len!=null?d.spec_accept_len.toFixed(2)+' tok/step':'';
-    }else{$('spec').innerHTML='<span class="l1 c-dim">—</span><span class="l2"></span>';}
+      $('spec-sub').textContent=d.spec_accept_len!=null?d.spec_accept_len.toFixed(2)+' '+t('u_tokstep'):'';    }else{$('spec').innerHTML='<span class="l1 c-dim">—</span><span class="l2"></span>';}
     const tot=d.completed_reqs||0,stop=d.completed_stop||0,err=Math.max(0,Math.round(tot)-Math.round(stop));
     if(tot>0){
       $('done').querySelector('.l1').className='l1 c-white';
-      $('done').querySelector('.l1').textContent=Math.round(tot).toLocaleString('en-US')+' req · '+fmtCount(tot*d.avg_gen||0)+' tok';
-      $('done-sub').textContent='len '+Math.round(d.avg_gen||0)+' · err '+err;
+      $('done').querySelector('.l1').textContent=Math.round(tot).toLocaleString('en-US')+' '+t('u_req')+' · '+fmtCount(tot*d.avg_gen||0)+' '+t('u_tok');
+      $('done-sub').textContent=t('st_len')+' '+Math.round(d.avg_gen||0)+' · '+t('st_err')+' '+err;
     }else{$('done').innerHTML='<span class="l1 c-dim">—</span><span class="l2"></span>';}
     if((d.avg_prompt||0)>0||(d.avg_gen||0)>0){
       $('shape').querySelector('.l1').className='l1 c-white';
-      $('shape').querySelector('.l1').textContent=fmtCount(d.avg_prompt||0)+' in · '+fmtCount(d.avg_gen||0)+' out';
-      $('shape-sub').textContent=((d.avg_gen_tps!=null)?d.avg_gen_tps.toFixed(1):'0.0')+' tok/s · '+fmtDur(d.latency_e2e||0)+' E2E';
+      $('shape').querySelector('.l1').textContent=fmtCount(d.avg_prompt||0)+' '+t('u_in')+' · '+fmtCount(d.avg_gen||0)+' '+t('u_out');
+      $('shape-sub').textContent=((d.avg_gen_tps!=null)?d.avg_gen_tps.toFixed(1):'0.0')+' '+t('u_toks')+' · '+fmtDur(d.latency_e2e||0)+' E2E';
     }else{$('shape').innerHTML='<span class="l1 c-dim">—</span><span class="l2"></span>';}
     /* history */
     const h=d.history||{};
     paintAxis($('ch-active'),h.active||[],x=>Math.round(x)+'','ax-active-top');
-    $('cap-active').textContent='current: '+Math.round(d.running||0);
+    $('cap-active').textContent=t('cap_cur')+': '+Math.round(d.running||0);
     paintAxis($('ch-gen'),h.gen_tok_s||[],x=>Math.round(x)+'','ax-gen-top');
-    $('cap-gen').textContent='current: '+(d.gen_tok_s||0).toFixed(1)+' tok/s';
+    $('cap-gen').textContent=t('cap_cur')+': '+(d.gen_tok_s||0).toFixed(1)+' '+t('u_toks');
     paintAxis($('ch-kv'),h.kv_pct||[],x=>Math.round(x)+'%','ax-kv-top');
-    $('cap-kv').textContent='current: '+((d.kv_usage||0)*100).toFixed(1)+'%';
+    $('cap-kv').textContent=t('cap_cur')+': '+((d.kv_usage||0)*100).toFixed(1)+'%';
     last=d;
-  }catch(e){$('hdr-status').textContent='OFFLINE';$('hdr-status').className='st-offline';$('dot').className='dot off';}
+  }catch(e){$('hdr-status').textContent=t('st_offline');$('hdr-status').className='st-offline';$('dot').className='dot off';}
 }
 function setAuto(run){
   auto=run;
