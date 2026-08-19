@@ -661,8 +661,8 @@ msg_interval_invalid:'Интервал должен быть 1–300 сек.',
  u_out:'выход',
  st_len:'длина',
  st_err:'ошибки',
- st_online:'ОНЛАЙН',
- st_offline:'ОФФЛАЙН'
+ st_online:'ONLINE',
+ st_offline:'OFFLINE'
 },
 en:{
 tip_dot:'Connection status to the vLLM server. Green = /metrics reachable, red = server unreachable or polling error.',
