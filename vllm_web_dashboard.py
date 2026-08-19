@@ -562,7 +562,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 <script>
 const $=id=>document.getElementById(id);
 let auto=true,last=null;
-let curInterval=__INTERVAL__;
+let curInterval=1; /* __INTERVAL__ is replaced server-side per-request; default until first sync */
 
 /* ---- i18n: RU / EN translations ---- */
 const I18N={
@@ -828,6 +828,7 @@ async function tick(){
     if(d.num_blocks)mb.push('<span class="dim" data-mtip="tip_blks" title="'+t('tip_blks')+'">'+d.num_blocks+' '+t('mb_blks')+'</span>');
     if(d.mem_util!=null)mb.push('<span class="dim" data-mtip="tip_util" title="'+t('tip_util')+'">'+t('mb_util')+' '+Math.round(d.mem_util*100)+'%</span>');
     $('modelbar').innerHTML=mb.join('<span class="sep dim">·</span>');
+    if(d.interval){curInterval=d.interval;$('iv').textContent=d.interval;}
     /* load */
     setVal('running','c-white',Math.round(d.running||0)+'');
     setVal('waiting','c-white',Math.round(d.waiting||0)+'');
