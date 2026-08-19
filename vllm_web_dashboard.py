@@ -1028,11 +1028,12 @@ document.addEventListener('keydown',e=>{
   if(tg&&(tg.tagName==='INPUT'||tg.tagName==='TEXTAREA'||tg.tagName==='SELECT'||tg.isContentEditable))return;
   if(e.ctrlKey||e.metaKey||e.altKey)return;
   const k=e.key.toLowerCase();
+  const c=e.code;
   if(k==='escape'){if(!modal.hidden)closeSettings();return;}
-  if(e.code==='Space'||k==='p'){e.preventDefault();setAuto(!auto);}
-  else if(k==='t'){e.preventDefault();quickToggleTheme();}
-  else if(k==='l'){e.preventDefault();cycleLang();}
-  else if(k==='s'){e.preventDefault();openSettings();}
+  if(c==='Space'||c==='KeyP'){e.preventDefault();setAuto(!auto);}
+  else if(c==='KeyT'){e.preventDefault();quickToggleTheme();}
+  else if(c==='KeyL'){e.preventDefault();cycleLang();}
+  else if(c==='KeyS'){e.preventDefault();openSettings();}
 });
 /* ---- apply-on-change persistence: every control saves immediately, no Save button ---- */
 async function saveField(patch){
