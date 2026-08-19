@@ -217,11 +217,14 @@ class Sampler:
 
         # History series (last N points)
         n = min(60, len(self.history))
+        seg = list(self.history)[-n:]
         data['history'] = {
-            'active': [round(h.get('running') or 0, 1) for h in list(self.history)[-n:]],
-            'gen_tok_s': [round(rate_i(i) or 0, 1) if False else _safe_rate(self, i) for i in range(len(self.history) - n, len(self.history))],
-            'kv_pct': [round((h.get('kv_usage') or 0) * 100, 1) for h in list(self.history)[-n:]],
+            'ts': [round(h['ts'], 3) for h in seg],
+            'active': [round(h.get('running') or 0, 1) for h in seg],
+            'gen_tok_s': [_safe_rate(self, i) for i in range(len(self.history) - n, len(self.history))],
+            'kv_pct': [round((h.get('kv_usage') or 0) * 100, 1) for h in seg],
         }
+        data['history']['gen_tok_s'] = [round(v, 1) if v is not None else None for v in data['history']['gen_tok_s']]
         return data
 
     def _ratio(self, cur: dict, num_key: str, den_key: str) -> Optional[float]:
@@ -358,7 +361,12 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .spark .plot{display:flex;gap:4px;align-items:stretch;width:100%}
 .spark .yax{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;color:var(--dim);font-size:11px;width:auto;min-width:16px;padding-bottom:1px;flex:none}
 .spark .bars{flex:1 1 auto;min-width:0;display:flex;align-items:flex-end;gap:1px;height:120px;border-left:1px solid var(--accent);padding-left:1px}
-.spark .bar{flex:1 1 0;background:var(--accent);opacity:.85;min-height:0;transition:height .25s}
+.spark .bar{flex:1 1 0;background:var(--accent);opacity:.85;min-height:0;transition:height .25s;position:relative}
+.spark .bar:hover{opacity:1}
+.spark .bar::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--panel);color:var(--fg);border:1px solid var(--accent);border-radius:6px;padding:3px 8px;font-size:11px;font-weight:400;line-height:1.3;white-space:nowrap;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .12s;z-index:5;box-shadow:0 4px 14px var(--shadow)}
+.spark .bar:hover::after{opacity:1;visibility:visible}
+.spark .bar.tip-right::after{left:auto;right:-4px;transform:none}
+.spark .bar.tip-left::after{left:-4px;right:auto;transform:none}
 .spark .cap{color:var(--dim);font-size:12px;margin-top:10px;text-align:center}
 .footer{margin-top:18px;color:var(--dim);font-size:11px;text-align:center}
 .footer a{color:var(--accent);cursor:pointer;text-decoration:none}
@@ -599,7 +607,13 @@ function fmtDur(s){
 function fmtInt(v){return v==null||isNaN(v)?'—':Math.round(v).toLocaleString('en-US');}
 function setVal(id,cls,text){const el=$(id);if(!el)return;el.className='val'+(cls?' '+cls:'');el.textContent=text;}
 
-function paintAxis(el,arr,fmtFn,topId){
+function fmtTs(ts){
+  if(ts==null||isNaN(ts))return '';
+  const d=new Date(ts*1000);
+  const p=n=>String(n).padStart(2,'0');
+  return p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
+}
+function paintAxis(el,arr,fmtFn,topId,tsArr){
   if(!el)return 0;
   el.innerHTML='';
   const finite=arr.filter(x=>x!=null&&!isNaN(x)&&isFinite(x));
@@ -607,10 +621,19 @@ function paintAxis(el,arr,fmtFn,topId){
   const topEl=$(topId); if(topEl)topEl.textContent=fmtFn(peak);
   // one thin column per sample (terminal draws one bar per data point)
   const frag=document.createDocumentFragment();
-  for(const v of arr){
+  for(let i=0;i<arr.length;i++){
+    const v=arr[i];
     const colEl=document.createElement('div');colEl.className='bar';
     const hv=(v==null||isNaN(v))?0:v;
-    colEl.style.height=(peak>0?Math.max(0,hv/peak*100):0)+'%';
+    // min 2px stub for zero-value bars so they stay hoverable even on a flat (all-zero) chart
+    colEl.style.height=(hv>0?(peak>0?Math.max(0,hv/peak*100):0):(peak>0?2:0))+'%';
+    // clamp tooltip inside the tile: right-aligned for the last bars, left-aligned for the first
+    if(arr.length>i-3)colEl.classList.add('tip-right');
+    else if(i<3)colEl.classList.add('tip-left');
+    const tipParts=[];
+    if(v!=null&&!isNaN(v))tipParts.push(fmtFn(v));
+    if(tsArr&&tsArr[i]!=null)tipParts.push(fmtTs(tsArr[i]));
+    if(tipParts.length)colEl.setAttribute('data-tip',tipParts.join(' · '));
     frag.appendChild(colEl);}
   el.appendChild(frag);
   return peak;}
@@ -871,12 +894,12 @@ async function tick(){
       const shSub=$('shape-sub'); if(shSub) shSub.textContent=((d.avg_gen_tps!=null)?d.avg_gen_tps.toFixed(1):'0.0')+' '+t('u_toks')+' · '+fmtDur(d.latency_e2e||0)+' E2E';
     }else{$('shape').innerHTML='<span class="l1 c-dim">—</span><span class="l2"></span>';}
     /* history */
-    const h=d.history||{};
-    paintAxis($('ch-active'),h.active||[],x=>Math.round(x)+'','ax-active-top');
+    const h=d.history||{},hts=h.ts||[];
+    paintAxis($('ch-active'),h.active||[],x=>Math.round(x)+'','ax-active-top',hts);
     $('cap-active').textContent=t('cap_cur')+': '+Math.round(d.running||0);
-    paintAxis($('ch-gen'),h.gen_tok_s||[],x=>Math.round(x)+'','ax-gen-top');
+    paintAxis($('ch-gen'),h.gen_tok_s||[],x=>Math.round(x)+'','ax-gen-top',hts);
     $('cap-gen').textContent=t('cap_cur')+': '+(d.gen_tok_s||0).toFixed(1)+' '+t('u_toks');
-    paintAxis($('ch-kv'),h.kv_pct||[],x=>Math.round(x)+'%','ax-kv-top');
+    paintAxis($('ch-kv'),h.kv_pct||[],x=>Math.round(x)+'%','ax-kv-top',hts);
     $('cap-kv').textContent=t('cap_cur')+': '+((d.kv_usage||0)*100).toFixed(1)+'%';
     last=d;
   }catch(e){console.error('[dashboard] tick() failed:', e);$('hdr-status').textContent=t('st_offline');$('hdr-status').className='st-offline';$('dot').className='dot off';}
