@@ -803,6 +803,7 @@ if(btn){
     btn.classList.toggle('paused',!run);
     btn.title=t(run?'tip_pause_on':'tip_pause_off');
   }
+  fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paused:!run})}).then(r=>r.json()).catch(()=>{});
   if(run)loop();
 }
 $('pause-btn').onclick=()=>setAuto(!auto);
@@ -1082,7 +1083,7 @@ $('set-accent-ok').onclick=function(){
 // populate the language dropdown from available I18N locales
 populateLangSelect();
 // apply persisted theme+accent+lang ASAP (before first paint of data)
-fetch('/api/status').then(r=>r.json()).then(d=>{applyAppearance(d.theme,d.accent);if(d.lang)curLang=d.lang;applyLang(d.lang);langSelect(d.lang||'en');}).catch(()=>{});
+fetch('/api/status').then(r=>r.json()).then(d=>{applyAppearance(d.theme,d.accent);if(d.lang)curLang=d.lang;applyLang(d.lang);langSelect(d.lang||'en');if(d.paused)setAuto(false);}).catch(()=>{});
 loop();
 </script></body></html>
 """
@@ -1094,6 +1095,7 @@ class Handler(BaseHTTPRequestHandler):
     vllm_url: str = ''
     api_key: Optional[str] = None
     interval_cv: threading.Condition = None  # type: ignore
+    paused: bool = False
 
     def log_message(self, fmt, *args):  # quiet
         pass
@@ -1114,7 +1116,8 @@ class Handler(BaseHTTPRequestHandler):
                        'interval': self.poll_interval,
                        'theme': settings.get('theme', 'system'),
                        'accent': settings.get('accent', '#3fb950'),
-                        'lang': settings.get('lang', 'en')}
+                        'lang': settings.get('lang', 'en'),
+                        'paused': Handler.paused}
             if snap:
                 payload.update(snap)
             else:
@@ -1139,7 +1142,7 @@ class Handler(BaseHTTPRequestHandler):
             length = int(self.headers.get('Content-Length') or 0)
             body = self.rfile.read(length) if length else b'{}'
             data = json.loads(body.decode('utf-8'))
-            if not any(k in data for k in ('interval', 'theme', 'lang', 'accent')):
+            if not any(k in data for k in ('interval', 'theme', 'lang', 'accent', 'paused')):
                 raise ValueError('nothing to update')
             result = {}
             if 'interval' in data:
@@ -1171,6 +1174,11 @@ class Handler(BaseHTTPRequestHandler):
                     ac = '#' + ac
                 save_setting('accent', ac)
                 result['accent'] = ac
+            if 'paused' in data:
+                Handler.paused = bool(data['paused'])
+                with Handler.interval_cv:
+                    Handler.interval_cv.notify_all()
+                result['paused'] = Handler.paused
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
@@ -1187,6 +1195,10 @@ def poll_loop(server: Handler, stop: threading.Event):
     headers = {'Authorization': f'Bearer {server.api_key}'} if server.api_key else {}
     cv = Handler.interval_cv
     while not stop.is_set():
+        if Handler.paused:
+            with cv:
+                cv.wait(0.5)
+            continue
         try:
             req = urllib.request.Request(url, headers=headers)
             with urllib.request.urlopen(req, timeout=5) as resp:
