@@ -434,7 +434,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
       <span class="sep dim">·</span>
       <span class="dim" id="url" data-i18n-title="tip_url">—</span>
       <span class="sep dim">·</span>
-      <span class="dim" data-i18n-title="tip_interval_hdr" data-i18n-html="refresh_hdr">refresh <span id="iv">?</span>s</span>
+      <span class="dim" data-i18n-title="tip_interval_hdr" data-i18n-js="rv">?</span>
     </div>
     <div class="row2" id="modelbar">
       <span class="mono-model" id="model" data-i18n-title="tip_model">—</span>
@@ -565,6 +565,56 @@ let auto=true,last=null;
 let curInterval=1; /* __INTERVAL__ is replaced server-side per-request; default until first sync */
 
 /* ---- i18n: RU / EN translations ---- */
+
+const LANG_NAMES={ru:'Русский',en:'English'};
+function t(key){const d=I18N[curLang]||{};return (key in d)?d[key]:(I18N.en[key]??key);}
+function updateModelBarTips(){
+  const bar=$('modelbar');if(!bar)return;
+  const spans=bar.querySelectorAll('span[data-mtip]');
+  spans.forEach(sp=>{const k=sp.getAttribute('data-mtip');if(k)sp.title=t(k);});
+}
+function applyLang(lang){
+  curLang=(lang in I18N)?lang:'en';
+  document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.dataset.i18n;if(k in (I18N[curLang]||{}))el.textContent=t(k);});
+document.querySelectorAll('[data-i18n-js]').forEach(el=>{const k=el.dataset.i18nJs;const fn=I18N_JS[k];if(fn)fn(el);});
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>{const k=el.dataset.i18nTitle;el.title=t(k);});
+  document.querySelectorAll('[data-i18n-aria]').forEach(el=>{const k=el.dataset.i18nAria;el.setAttribute('aria-label',t(k));});
+  const tt=document.querySelector('[data-i18n-title-tag]');if(tt)document.title=t('title_tag');
+  updatePauseTip();
+  updateModelBarTips();
+}
+function updatePauseTip(){const b=$('pause-btn');if(b)b.title=t(auto?'tip_pause_on':'tip_pause_off');}
+
+/* ---- formatters mirroring the terminal vllm-monitor ---- */
+function fmtCount(n){n=Math.abs(n);
+  if(n<1000)return Math.round(n)+'';
+  if(n<1e6)return (n/1e3).toFixed(1)+'K';
+  if(n<1e9)return (n/1e6).toFixed(1)+'M';
+  return (n/1e9).toFixed(1)+'B';}
+function fmtDur(s){
+  if(Math.abs(s)<1){const ms=s*1000;return (ms<10)?ms.toFixed(1)+'ms':Math.round(ms)+'ms';}
+  if(Math.abs(s)<60)return s.toFixed(1)+'s';
+  if(Math.abs(s)<3600){const m=Math.floor(Math.round(s)/60),ss=Math.round(s)%60;return m+'m '+ss+'s';}
+  const h=Math.floor(Math.round(s)/3600),rem=Math.round(s)%3600;return h+'h '+(rem/60|0)+'m';}
+function fmtInt(v){return v==null||isNaN(v)?'—':Math.round(v).toLocaleString('en-US');}
+function setVal(id,cls,text){const el=$(id);if(!el)return;el.className='val'+(cls?' '+cls:'');el.textContent=text;}
+
+function paintAxis(el,arr,fmtFn,topId){
+  if(!el)return 0;
+  el.innerHTML='';
+  const finite=arr.filter(x=>x!=null&&!isNaN(x)&&isFinite(x));
+  const peak=finite.length?Math.max.apply(null,finite):0;
+  const topEl=$(topId); if(topEl)topEl.textContent=fmtFn(peak);
+  // one thin column per sample (terminal draws one bar per data point)
+  const frag=document.createDocumentFragment();
+  for(const v of arr){
+    const colEl=document.createElement('div');colEl.className='bar';
+    const hv=(v==null||isNaN(v))?0:v;
+    colEl.style.height=(peak>0?Math.max(0,hv/peak*100):0)+'%';
+    frag.appendChild(colEl);}
+  el.appendChild(frag);
+  return peak;}
+
 const I18N={
 ru:{
 tip_dot:'Состояние связи с vLLM-сервером. Зелёный = /metrics доступен, красный = сервер недоступен или ошибка опроса.',
@@ -648,7 +698,6 @@ msg_interval_invalid:'Интервал должен быть 1–300 сек.',
  sec_history:'История',
  lbl_active:'Активные запросы',
  lbl_gpucache:'GPU-кэш %',
- refresh_hdr:'обновление: <span id="iv">?</span> с',
  cap_cur:'сейчас',
  mb_kv:'kv',
  mb_blks:'блоков',
@@ -746,7 +795,6 @@ msg_interval_invalid:'Interval must be 1–300 seconds.',
  sec_history:'History',
  lbl_active:'Active Requests',
  lbl_gpucache:'GPU Cache %',
- refresh_hdr:'refresh <span id="iv">?</span>s',
  cap_cur:'current',
  mb_kv:'kv',
  mb_blks:'blks',
@@ -762,54 +810,19 @@ msg_interval_invalid:'Interval must be 1–300 seconds.',
  st_online:'ONLINE',
  st_offline:'OFFLINE'
 }};
+const I18N_JS={
+ rv:function(el){
+   var n=curInterval;
+   if(curLang==='ru'){
+     if(n===1) el.textContent='обновление каждую секунду';
+     else if(n>=2 && n<=4) el.textContent='обновление каждые '+n+' секунды';
+     else el.textContent='обновление каждые '+n+' секунд';
+   } else {
+     el.textContent='refresh every '+n+' second'+(n>1?'s':'');
+   }
+ }
+};
 let curLang='en';
-const LANG_NAMES={ru:'Русский',en:'English'};
-function t(key){const d=I18N[curLang]||{};return (key in d)?d[key]:(I18N.en[key]??key);}
-function updateModelBarTips(){
-  const bar=$('modelbar');if(!bar)return;
-  const spans=bar.querySelectorAll('span[data-mtip]');
-  spans.forEach(sp=>{const k=sp.getAttribute('data-mtip');if(k)sp.title=t(k);});
-}
-function applyLang(lang){
-  curLang=(lang in I18N)?lang:'en';
-  document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.dataset.i18n;if(k in (I18N[curLang]||{}))el.textContent=t(k);});
-document.querySelectorAll('[data-i18n-html]').forEach(el=>{const k=el.dataset.i18nHtml;if(k in (I18N[curLang]||{}))el.innerHTML=t(k);});
-  document.querySelectorAll('[data-i18n-title]').forEach(el=>{const k=el.dataset.i18nTitle;el.title=t(k);});
-  document.querySelectorAll('[data-i18n-aria]').forEach(el=>{const k=el.dataset.i18nAria;el.setAttribute('aria-label',t(k));});
-  const tt=document.querySelector('[data-i18n-title-tag]');if(tt)document.title=t('title_tag');
-  updatePauseTip();
-  updateModelBarTips();
-}
-function updatePauseTip(){const b=$('pause-btn');if(b)b.title=t(auto?'tip_pause_on':'tip_pause_off');}
-
-/* ---- formatters mirroring the terminal vllm-monitor ---- */
-function fmtCount(n){n=Math.abs(n);
-  if(n<1000)return Math.round(n)+'';
-  if(n<1e6)return (n/1e3).toFixed(1)+'K';
-  if(n<1e9)return (n/1e6).toFixed(1)+'M';
-  return (n/1e9).toFixed(1)+'B';}
-function fmtDur(s){
-  if(Math.abs(s)<1){const ms=s*1000;return (ms<10)?ms.toFixed(1)+'ms':Math.round(ms)+'ms';}
-  if(Math.abs(s)<60)return s.toFixed(1)+'s';
-  if(Math.abs(s)<3600){const m=Math.floor(Math.round(s)/60),ss=Math.round(s)%60;return m+'m '+ss+'s';}
-  const h=Math.floor(Math.round(s)/3600),rem=Math.round(s)%3600;return h+'h '+(rem/60|0)+'m';}
-function fmtInt(v){return v==null||isNaN(v)?'—':Math.round(v).toLocaleString('en-US');}
-function setVal(id,cls,text){const el=$(id);el.className='val'+(cls?' '+cls:'');el.textContent=text;}
-
-function paintAxis(el,arr,fmtFn,topId){
-  el.innerHTML='';
-  const finite=arr.filter(x=>x!=null&&!isNaN(x)&&isFinite(x));
-  const peak=finite.length?Math.max.apply(null,finite):0;
-  $(topId).textContent=fmtFn(peak);
-  // one thin column per sample (terminal draws one bar per data point)
-  const frag=document.createDocumentFragment();
-  for(const v of arr){
-    const colEl=document.createElement('div');colEl.className='bar';
-    const hv=(v==null||isNaN(v))?0:v;
-    colEl.style.height=(peak>0?Math.max(0,hv/peak*100):0)+'%';
-    frag.appendChild(colEl);}
-  el.appendChild(frag);
-  return peak;}
 
 async function tick(){
   try{
@@ -828,7 +841,7 @@ async function tick(){
     if(d.num_blocks)mb.push('<span class="dim" data-mtip="tip_blks" title="'+t('tip_blks')+'">'+d.num_blocks+' '+t('mb_blks')+'</span>');
     if(d.mem_util!=null)mb.push('<span class="dim" data-mtip="tip_util" title="'+t('tip_util')+'">'+t('mb_util')+' '+Math.round(d.mem_util*100)+'%</span>');
     $('modelbar').innerHTML=mb.join('<span class="sep dim">·</span>');
-    if(d.interval){curInterval=d.interval;$('iv').textContent=d.interval;}
+    if(d.interval){curInterval=d.interval;document.querySelectorAll('[data-i18n-js]').forEach(function(el){var fn=I18N_JS[el.dataset.i18nJs];if(fn)fn(el);});}
     /* load */
     setVal('running','c-white',Math.round(d.running||0)+'');
     setVal('waiting','c-white',Math.round(d.waiting||0)+'');
@@ -843,19 +856,19 @@ async function tick(){
     setVal('pcache','c-white',((d.prefix_hit_ratio||0)*100).toFixed(1)+'%');
     /* stats */
     if(d.spec_accept_rate!=null){
-      $('spec').querySelector('.l1').className='l1 c-white';
-      $('spec').querySelector('.l1').textContent=(d.spec_accept_rate*100).toFixed(1)+'%';
-      $('spec-sub').textContent=d.spec_accept_len!=null?d.spec_accept_len.toFixed(2)+' '+t('u_tokstep'):'';    }else{$('spec').innerHTML='<span class="l1 c-dim">—</span><span class="l2"></span>';}
+      const speL1=$('spec')&&$('spec').querySelector('.l1');
+      if(speL1){speL1.className='l1 c-white';speL1.textContent=(d.spec_accept_rate*100).toFixed(1)+'%';}
+      const spSub=$('spec-sub'); if(spSub) spSub.textContent=d.spec_accept_len!=null?d.spec_accept_len.toFixed(2)+' '+t('u_tokstep'):'';    }else{$('spec').innerHTML='<span class="l1 c-dim">—</span><span class="l2"></span>';}
     const tot=d.completed_reqs||0,stop=d.completed_stop||0,err=Math.max(0,Math.round(tot)-Math.round(stop));
     if(tot>0){
-      $('done').querySelector('.l1').className='l1 c-white';
-      $('done').querySelector('.l1').textContent=Math.round(tot).toLocaleString('en-US')+' '+t('u_req')+' · '+fmtCount(tot*d.avg_gen||0)+' '+t('u_tok');
-      $('done-sub').textContent=t('st_len')+' '+Math.round(d.avg_gen||0)+' · '+t('st_err')+' '+err;
+      const dnL1=$('done')&&$('done').querySelector('.l1');
+      if(dnL1){dnL1.className='l1 c-white';dnL1.textContent=Math.round(tot).toLocaleString('en-US')+' '+t('u_req')+' · '+fmtCount(tot*d.avg_gen||0)+' '+t('u_tok');}
+      const dnSub=$('done-sub'); if(dnSub) dnSub.textContent=t('st_len')+' '+Math.round(d.avg_gen||0)+' · '+t('st_err')+' '+err;
     }else{$('done').innerHTML='<span class="l1 c-dim">—</span><span class="l2"></span>';}
     if((d.avg_prompt||0)>0||(d.avg_gen||0)>0){
-      $('shape').querySelector('.l1').className='l1 c-white';
-      $('shape').querySelector('.l1').textContent=fmtCount(d.avg_prompt||0)+' '+t('u_in')+' · '+fmtCount(d.avg_gen||0)+' '+t('u_out');
-      $('shape-sub').textContent=((d.avg_gen_tps!=null)?d.avg_gen_tps.toFixed(1):'0.0')+' '+t('u_toks')+' · '+fmtDur(d.latency_e2e||0)+' E2E';
+      const shL1=$('shape')&&$('shape').querySelector('.l1');
+      if(shL1){shL1.className='l1 c-white';shL1.textContent=fmtCount(d.avg_prompt||0)+' '+t('u_in')+' · '+fmtCount(d.avg_gen||0)+' '+t('u_out');}
+      const shSub=$('shape-sub'); if(shSub) shSub.textContent=((d.avg_gen_tps!=null)?d.avg_gen_tps.toFixed(1):'0.0')+' '+t('u_toks')+' · '+fmtDur(d.latency_e2e||0)+' E2E';
     }else{$('shape').innerHTML='<span class="l1 c-dim">—</span><span class="l2"></span>';}
     /* history */
     const h=d.history||{};
@@ -866,7 +879,7 @@ async function tick(){
     paintAxis($('ch-kv'),h.kv_pct||[],x=>Math.round(x)+'%','ax-kv-top');
     $('cap-kv').textContent=t('cap_cur')+': '+((d.kv_usage||0)*100).toFixed(1)+'%';
     last=d;
-  }catch(e){$('hdr-status').textContent=t('st_offline');$('hdr-status').className='st-offline';$('dot').className='dot off';}
+  }catch(e){console.error('[dashboard] tick() failed:', e);$('hdr-status').textContent=t('st_offline');$('hdr-status').className='st-offline';$('dot').className='dot off';}
 }
 function setAuto(run){
   auto=run;
@@ -881,7 +894,6 @@ if(btn){
 }
 $('pause-btn').onclick=()=>setAuto(!auto);
 $('pause-btn').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setAuto(!auto);}};
-$('iv').textContent=curInterval;
 function loop(){if(!auto)return;tick().then(()=>setTimeout(loop,curInterval*1000));}
 
 /* ---- appearance: theme + accent (accent is any hex) ---- */
@@ -1038,7 +1050,7 @@ $('set-interval').addEventListener('change',()=>{
   const inp=$('set-interval');
   const v=parseFloat(inp.value);
   if(isNaN(v)||v<1||v>300){ inp.value=curInterval; flashMsg(t('msg_interval_invalid'),'err'); return; }
-  curInterval=v; $('iv').textContent=v;
+  curInterval=v;
   saveField({interval:v});
 });
 function flashMsg(text,kind){
