@@ -28,6 +28,7 @@ def main():
     Handler.api_key = args.api_key
     Handler.poll_interval = effective
     Handler.sampler = Sampler()
+    Handler.sampler.set_model(load_settings().get('model'))
 
     srv = ThreadingHTTPServer((args.host, args.port), Handler)
     stop = threading.Event()

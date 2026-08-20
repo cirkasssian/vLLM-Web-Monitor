@@ -11,28 +11,60 @@ class Sampler:
 
     def __init__(self, maxlen: int = 60):
         self.history: deque = deque(maxlen=maxlen)
+        self.selected_model: Optional[str] = None
+        self._model_filter: Optional[str] = None
+
+    def set_model(self, model: Optional[str]):
+        """Select which model's metrics to display (None = auto/first seen)."""
+        self.selected_model = model
+        self._model_filter = model
+
+    def _filtered_pick(self, raw: Dict[str, dict], name: str, pred=None) -> Optional[float]:
+        """pick() restricted to the selected model's buckets (when a filter is set).
+
+        Metrics without a model_name label (e.g. cache_config_info) pass through
+        unfiltered — there is no model_name to match against.
+        """
+        if self._model_filter is None:
+            return pick(raw, name, pred)
+        mf = self._model_filter
+        if pred is None:
+            return pick(raw, name, lambda l: l.get('model_name') == mf)
+        return pick(raw, name, lambda l: l.get('model_name') == mf and pred(l))
+
+    @staticmethod
+    def _models_seen(raw: Dict[str, dict]) -> list:
+        """Distinct model_name values across all labeled metrics, sorted."""
+        seen = set()
+        for buckets in raw.values():
+            for lbls in buckets:
+                md = dict(lbls)
+                if 'model_name' in md:
+                    seen.add(md['model_name'])
+        return sorted(seen)
 
     def ingest(self, raw: Dict[str, dict], ts: float):
         snap = {
             'ts': ts,
             'raw': raw,
+            'models_seen': self._models_seen(raw),
             # counters
-            'prompt_tokens': pick(raw, 'vllm:prompt_tokens_total'),
-            'gen_tokens': pick(raw, 'vllm:generation_tokens_total'),
-            'prefix_hits': pick(raw, 'vllm:prefix_cache_hits_total'),
-            'prefix_queries': pick(raw, 'vllm:prefix_cache_queries_total'),
-            'spec_accepted': pick(raw, 'vllm:spec_decode_num_accepted_tokens_total'),
-            'spec_draft_tokens': pick(raw, 'vllm:spec_decode_num_draft_tokens_total'),
-            'spec_drafts': pick(raw, 'vllm:spec_decode_num_drafts_total'),
-            'success_total': pick(raw, 'vllm:request_success_total'),
-            'success_stop': pick(raw, 'vllm:request_success_total', lambda l: l.get('finished_reason') == 'stop'),
+            'prompt_tokens': self._filtered_pick(raw, 'vllm:prompt_tokens_total'),
+            'gen_tokens': self._filtered_pick(raw, 'vllm:generation_tokens_total'),
+            'prefix_hits': self._filtered_pick(raw, 'vllm:prefix_cache_hits_total'),
+            'prefix_queries': self._filtered_pick(raw, 'vllm:prefix_cache_queries_total'),
+            'spec_accepted': self._filtered_pick(raw, 'vllm:spec_decode_num_accepted_tokens_total'),
+            'spec_draft_tokens': self._filtered_pick(raw, 'vllm:spec_decode_num_draft_tokens_total'),
+            'spec_drafts': self._filtered_pick(raw, 'vllm:spec_decode_num_drafts_total'),
+            'success_total': self._filtered_pick(raw, 'vllm:request_success_total'),
+            'success_stop': self._filtered_pick(raw, 'vllm:request_success_total', lambda l: l.get('finished_reason') == 'stop'),
             # gauges
-            'running': pick(raw, 'vllm:num_requests_running'),
-            'waiting': pick(raw, 'vllm:num_requests_waiting'),
-            'preempted': pick(raw, 'vllm:num_preemptions_total'),
+            'running': self._filtered_pick(raw, 'vllm:num_requests_running'),
+            'waiting': self._filtered_pick(raw, 'vllm:num_requests_waiting'),
+            'preempted': self._filtered_pick(raw, 'vllm:num_preemptions_total'),
             'kv_usage': (lambda a, b: a if a is not None else b)(
-                pick(raw, 'vllm:kv_cache_usage_perc'),
-                pick(raw, 'vllm:gpu_cache_usage_perc')),
+                self._filtered_pick(raw, 'vllm:kv_cache_usage_perc'),
+                self._filtered_pick(raw, 'vllm:gpu_cache_usage_perc')),
             # model info — extract from a label-bearing gauge
             'model_name': None,
             'cache_config': pick(raw, 'vllm:cache_config_info'),
@@ -80,10 +112,14 @@ class Sampler:
                 return None
             return (new - old) / dt
 
+        models_seen = cur.get('models_seen') or []
+        selected = self.selected_model
         data = {
             'ts': cur['ts'],
             'online': True,
-            'model_name': cur.get('model_name'),
+            'models_seen': models_seen,
+            'model_name': selected if selected else (models_seen[0] if models_seen else cur.get('model_name')),
+            'model_available': True if selected is None else (selected in models_seen),
             'kv_dtype': cur.get('kv_dtype'),
             'num_blocks': cur.get('num_blocks'),
             'mem_util': cur.get('mem_util'),
@@ -182,10 +218,10 @@ class Sampler:
             return None
         cur_raw = self.history[-1]['raw']
         prev_raw = self.history[-2]['raw']
-        s_cur = pick(cur_raw, f'{name}_sum') or 0.0
-        c_cur = pick(cur_raw, f'{name}_count') or 0.0
-        s_prev = pick(prev_raw, f'{name}_sum') or 0.0
-        c_prev = pick(prev_raw, f'{name}_count') or 0.0
+        s_cur = self._filtered_pick(cur_raw, f'{name}_sum') or 0.0
+        c_cur = self._filtered_pick(cur_raw, f'{name}_count') or 0.0
+        s_prev = self._filtered_pick(prev_raw, f'{name}_sum') or 0.0
+        c_prev = self._filtered_pick(prev_raw, f'{name}_count') or 0.0
         ds, dc = s_cur - s_prev, c_cur - c_prev
         if dc <= 0:
             # fall back to lifetime mean
@@ -196,8 +232,8 @@ class Sampler:
 
     def _lifetime_mean(self, name: str) -> Optional[float]:
         raw = self.history[-1]['raw'] if self.history else {}
-        s = pick(raw, f'{name}_sum')
-        c = pick(raw, f'{name}_count')
+        s = self._filtered_pick(raw, f'{name}_sum')
+        c = self._filtered_pick(raw, f'{name}_count')
         if s is None or c is None or c <= 0:
             return None
         return s / c

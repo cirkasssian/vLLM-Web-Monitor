@@ -1,6 +1,7 @@
 """HTTP server: page + /api/status + /api/settings, vLLM /metrics poll loop."""
 
 import json
+import re
 import threading
 import time
 import urllib.request
@@ -44,6 +45,7 @@ class Handler(BaseHTTPRequestHandler):
                        'accent': settings.get('accent', '#3fb950'),
                         'lang': settings.get('lang', 'en'),
                         'paused': Handler.paused}
+            payload['model'] = settings.get('model')
             if snap:
                 payload.update(snap)
             else:
@@ -68,7 +70,7 @@ class Handler(BaseHTTPRequestHandler):
             length = int(self.headers.get('Content-Length') or 0)
             body = self.rfile.read(length) if length else b'{}'
             data = json.loads(body.decode('utf-8'))
-            if not any(k in data for k in ('interval', 'theme', 'lang', 'accent', 'paused')):
+            if not any(k in data for k in ('interval', 'theme', 'lang', 'accent', 'paused', 'model')):
                 raise ValueError('nothing to update')
             result = {}
             if 'interval' in data:
@@ -100,6 +102,13 @@ class Handler(BaseHTTPRequestHandler):
                     ac = '#' + ac
                 save_setting('accent', ac)
                 result['accent'] = ac
+            if 'model' in data:
+                mo = data['model']
+                if not isinstance(mo, str):
+                    raise ValueError('model must be a string')
+                save_setting('model', mo)
+                Handler.sampler.set_model(mo or None)
+                result['model'] = mo
             if 'paused' in data:
                 Handler.paused = bool(data['paused'])
                 with Handler.interval_cv:
