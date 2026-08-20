@@ -127,8 +127,6 @@ class Sampler:
             'active': [round(h.get('running') or 0, 1) for h in seg],
             'gen_tok_s': [_safe_rate(self, i) for i in range(len(self.history) - n, len(self.history))],
             'kv_pct': [round((h.get('kv_usage') or 0) * 100, 1) for h in seg],
-            'prompt_tokens': [h.get('prompt_tokens') for h in seg],
-            'gen_tokens': [h.get('gen_tokens') for h in seg],
         }
         data['history']['gen_tok_s'] = [round(v, 1) if v is not None else None for v in data['history']['gen_tok_s']]
         return data
