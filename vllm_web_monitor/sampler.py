@@ -9,6 +9,8 @@ from .prometheus import pick
 class Sampler:
     """Keeps the last few parsed snapshots to compute rates & recent means."""
 
+    MIN_RATE_WINDOW = 3.0
+
     def __init__(self, maxlen: int = 60):
         self.history: deque = deque(maxlen=maxlen)
 
@@ -70,13 +72,18 @@ class Sampler:
 
         dt = (cur['ts'] - prev['ts']) if prev else 0.0
 
+        # Counter-reset guard: a smaller counter than the previous sample
+        # means the vLLM process restarted; report no rate. Warm-up guard:
+        # a dt below MIN_RATE_WINDOW (possible right after our own start,
+        # when the first poll happens sooner than the nominal interval)
+        # would inflate the rate; skip it too.
         def rate(key: str) -> Optional[float]:
-            if not prev or dt <= 0:
+            if not prev or dt <= 0 or dt < self.MIN_RATE_WINDOW:
                 return None
             new, old = cur.get(key), prev.get(key)
-            if new is None or old is None:
+            if new is None or old is None or new < old:
                 return None
-            return max(0.0, (new - old)) / dt
+            return (new - old) / dt
 
         data = {
             'ts': cur['ts'],
@@ -182,6 +189,8 @@ def _safe_rate(sampler: Sampler, idx: int) -> Optional[float]:
     if gt_a is None or gt_b is None:
         return None
     dt = b['ts'] - a['ts']
-    if dt <= 0:
+    if dt <= 0 or dt < sampler.MIN_RATE_WINDOW:
         return None
-    return max(0.0, (gt_b - gt_a) / dt)
+    if gt_b < gt_a:
+        return None
+    return (gt_b - gt_a) / dt
