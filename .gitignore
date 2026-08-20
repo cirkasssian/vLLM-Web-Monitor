@@ -2,9 +2,12 @@
 *.log
 # local backups
 *.bak.*
+*.bak-*
 # pycache
 __pycache__/
 *.pyc
 
 # runtime settings (written by the dashboard UI)
 config.json
+# dev docs
+/develop/
