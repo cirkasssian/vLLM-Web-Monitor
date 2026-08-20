@@ -8,6 +8,7 @@ from http.server import BaseHTTPRequestHandler
 from typing import Dict, Optional
 
 from .config import load_settings, save_setting
+from .i18n import I18N_JS
 from .page import PAGE_HTML
 from .prometheus import parse_prometheus
 from .sampler import Sampler
@@ -27,6 +28,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/' or self.path == '/index.html':
             body = PAGE_HTML.replace('__INTERVAL__', str(int(self.poll_interval)))
+            body = body.replace('__I18N__', I18N_JS)
             data = body.encode('utf-8')
             self.send_response(200)
             self.send_header('Content-Type', 'text/html; charset=utf-8')
