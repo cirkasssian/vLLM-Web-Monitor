@@ -50,6 +50,11 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 .pb-glyph{display:inline-block;line-height:1}
 .dim{color:var(--dim)}
 .mono-model{color:var(--cyan);font-weight:700}
+.mono-model.c-red{color:var(--err)}
+.model-sel{appearance:none;-webkit-appearance:none;background:transparent;border:1px solid transparent;border-radius:6px;color:var(--cyan);font-family:inherit;font-size:inherit;font-weight:700;padding:1px 18px 1px 7px;cursor:pointer;line-height:1.4;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='6'%3E%3Cpath d='M0 0l4 6 4-6z' fill='%238b949e'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center}
+.model-sel:hover,.model-sel:focus{border-color:var(--border);outline:none}
+.model-sel.unavail{color:var(--err)}
+.model-sel option{color:initial;background:var(--panel)}
 .sep{color:var(--dim)}
 /* ---- Sections ---- */
 .sec{margin-top:16px}
@@ -156,9 +161,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
       <span class="sep dim">·</span>
       <span class="dim" data-i18n-title="tip_interval_hdr" data-i18n-js="rv">?</span>
     </div>
-    <div class="row2" id="modelbar">
-      <span class="mono-model" id="model" data-i18n-title="tip_model">—</span>
-    </div>
+    <div class="row2" id="modelbar"></div>
   </div>
   <div class="hdr-right">
     <a href="#" id="settings-btn" data-i18n-title="tip_settings" data-settings-label>⚙ <span data-i18n="set_btn_label">настройки</span></a>
@@ -367,6 +370,45 @@ const I18N_JS={
 };
 let curLang='en';
 
+/* ---- model selector: persistent <select>, rebuilt only when the model set changes ---- */
+let modelSelSig=null,modelSelPrev='';
+function renderModelBar(d){
+  const bar=$('modelbar');if(!bar)return;
+  const models=Array.isArray(d.models_seen)?d.models_seen:[];
+  const avail=d.model_available!==false;
+  const sig=models.join('\u0001')+':'+(avail?1:0);
+  if(sig!==modelSelSig){
+    modelSelSig=sig;
+    bar.innerHTML='';
+    const sel=document.createElement('select');
+    sel.id='model-sel';sel.className='model-sel';sel.tabIndex=-1;
+    models.forEach(m=>{
+      const o=document.createElement('option');
+      o.value=m;o.textContent=m;
+      sel.appendChild(o);
+    });
+    sel.addEventListener('change',()=>{
+      modelSelPrev=sel.value;
+      saveField({model:sel.value});
+    });
+    bar.appendChild(sel);
+  }
+  const sel=$('model-sel');if(!sel)return;
+  const name=d.model_name||'';
+  if(models.length&&models.indexOf(name)<0&&name)sel.appendChild(new Option(name,name,true));
+  sel.value=name;
+  sel.classList.toggle('unavail',!avail);
+  sel.title=avail?t('mdl_select_tip'):t('mdl_select_tip')+' ('+t('mdl_unavailable')+')';
+  const sep=document.createElement('span');sep.className='sep dim';sep.textContent='\u00B7';
+  const mk=k=>{const s=document.createElement('span');s.className='dim';s.setAttribute('data-mtip',k);s.title=t(k);return s;};
+  const infos=[];
+  if(d.kv_dtype){const s=mk('tip_kv_dtype');s.textContent=t('mb_kv')+' '+d.kv_dtype;infos.push(s);}
+  if(d.num_blocks){const s=mk('tip_blks');s.textContent=d.num_blocks+' '+t('mb_blks');infos.push(s);}
+  if(d.mem_util!=null){const s=mk('tip_util');s.textContent=t('mb_util')+' '+Math.round(d.mem_util*100)+'%';infos.push(s);}
+  while(bar.children.length>1)bar.removeChild(bar.lastChild);
+  infos.forEach(s=>{bar.appendChild(sep.cloneNode(true));bar.appendChild(s);});
+}
+
 async function tick(){
   try{
     const r=await fetch('/api/status');const d=await r.json();
@@ -377,13 +419,8 @@ async function tick(){
     $('dot').className='dot';
     $('hdr-status').textContent=t('st_online');$('hdr-status').className='st-online';
     $('url').textContent=d.url||'';
-    /* model bar */
-    const mb=[];
-    mb.push('<span class="mono-model" data-mtip="mdl_title" title="'+t('mdl_title')+'">'+(d.model_name||'unknown')+'</span>');
-    if(d.kv_dtype)mb.push('<span class="dim" data-mtip="tip_kv_dtype" title="'+t('tip_kv_dtype')+'">'+t('mb_kv')+' '+d.kv_dtype+'</span>');
-    if(d.num_blocks)mb.push('<span class="dim" data-mtip="tip_blks" title="'+t('tip_blks')+'">'+d.num_blocks+' '+t('mb_blks')+'</span>');
-    if(d.mem_util!=null)mb.push('<span class="dim" data-mtip="tip_util" title="'+t('tip_util')+'">'+t('mb_util')+' '+Math.round(d.mem_util*100)+'%</span>');
-    $('modelbar').innerHTML=mb.join('<span class="sep dim">·</span>');
+    /* model bar: persistent <select> (rebuilt only when the model set changes) + info spans */
+    renderModelBar(d);
     if(d.interval){curInterval=d.interval;document.querySelectorAll('[data-i18n-js]').forEach(function(el){var fn=I18N_JS[el.dataset.i18nJs];if(fn)fn(el);});}
     /* load */
     setVal('running','c-white',Math.round(d.running||0)+'');
@@ -730,7 +767,7 @@ $('set-accent-ok').onclick=function(){
 // populate the language dropdown from available I18N locales
 populateLangSelect();
 // apply persisted theme+accent+lang ASAP (before first paint of data)
-fetch('/api/status').then(r=>r.json()).then(d=>{applyAppearance(d.theme,d.accent);if(d.lang)curLang=d.lang;applyLang(d.lang);langSelect(d.lang||'en');if(d.paused)setAuto(false);}).catch(()=>{});
+fetch('/api/status').then(r=>r.json()).then(d=>{applyAppearance(d.theme,d.accent);if(d.lang)curLang=d.lang;applyLang(d.lang);langSelect(d.lang||'en');if(d.paused)setAuto(false);if(typeof d.model==='string'&&d.model)modelSelPrev=d.model;}).catch(()=>{});
 loop();
 </script></body></html>
 """
