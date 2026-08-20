@@ -1,4 +1,4 @@
-"""HTTP server: page + /api/status + /api/settings, vLLM /metrics poll loop."""
+"""HTTP server: page + /api/status + /api/settings + /healthz, vLLM /metrics poll loop."""
 
 import json
 import re
@@ -57,9 +57,40 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header('Content-Length', str(len(data)))
             self.end_headers()
             self.wfile.write(data)
+        elif self.path == '/healthz':
+            self._send_healthz()
         else:
             self.send_response(404)
             self.end_headers()
+
+    def _send_healthz(self):
+        """Lightweight liveness/readiness probe for external monitoring.
+
+        200 when the monitor has a fresh sample from vLLM, 503 otherwise.
+        Freshness = last sample younger than 3x the poll interval (tolerates
+        a couple of missed polls before declaring loss of contact).
+        """
+        snap = self.sampler.current()
+        now = time.time()
+        reachable = bool(snap)
+        age = (now - snap['ts']) if snap else None
+        fresh = reachable and age is not None and age <= self.poll_interval * 3
+        status = 'ok' if fresh else ('degraded' if reachable else 'down')
+        payload = {
+            'status': status,
+            'monitor_online': True,
+            'vllm_reachable': reachable,
+            'fresh': fresh,
+            'last_sample_age_sec': round(age, 3) if age is not None else None,
+            'interval': self.poll_interval,
+        }
+        data = json.dumps(payload).encode()
+        self.send_response(200 if fresh else 503)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Content-Length', str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
 
     def do_POST(self):
         if self.path != '/api/settings':
