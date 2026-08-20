@@ -351,7 +351,7 @@ function paintAxis(el,arr,fmtFn,topId,tsArr){
   return peak;}
 
 // I18N dictionary: injected here at request time by the server;
-// vllm_web/i18n.py is the canonical source of the translations.
+// vllm_web_monitor/i18n.py is the canonical source of the translations.
 __I18N__
 const I18N_JS={
  rv:function(el){
