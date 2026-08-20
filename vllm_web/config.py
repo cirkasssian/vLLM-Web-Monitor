@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 from typing import Dict
 
-# Package dir is ~/vllm-web/vllm_web/; settings live in the app dir ~/vllm-web/ (project: vllm-web-monitor).
+# Package dir is ~/vllm-web-monitor/vllm_web/; settings live in the app dir ~/vllm-web-monitor/.
 APP_DIR = Path(__file__).resolve().parent.parent
 CONFIG_PATH = APP_DIR / 'config.json'
 MIN_INTERVAL, MAX_INTERVAL = 1.0, 300.0
