@@ -34,8 +34,8 @@ def main():
     t = threading.Thread(target=poll_loop, args=(Handler, stop), daemon=True)
     t.start()
     src = 'cli' if args.interval is not None else ('config' if cfg_interval else 'default')
-    print(f'[vllm-web] listening on http://{args.host}:{args.port}')
-    print(f'[vllm-web] polling {args.vllm_url}/metrics every {effective}s (source: {src})')
+    print(f'[vllm-web-monitor] listening on http://{args.host}:{args.port}')
+    print(f'[vllm-web-monitor] polling {args.vllm_url}/metrics every {effective}s (source: {src})')
     try:
         srv.serve_forever()
     finally:

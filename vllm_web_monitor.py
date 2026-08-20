@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Entrypoint shim for the vllm-web dashboard.
+"""Entrypoint shim for vllm-web-monitor.
 
 The implementation lives in the ``vllm_web/`` package next to this file.
 This shim keeps the historical launch command working:
-    python3 vllm_web_dashboard.py ...
+    python3 vllm_web_monitor.py ...
 Equivalent invocation:
     python3 -m vllm_web ...
 """
