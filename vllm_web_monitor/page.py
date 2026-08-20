@@ -204,13 +204,16 @@ body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px
 </div>
 
 <div class="sec"><div class="sec-label" data-i18n="sec_history">History</div>
-  <div class="tiles t3">
+  <div class="tiles t4">
     <div class="tile spark" data-i18n-title="tip_hist_active"><div class="lbl" data-i18n="lbl_active">Active Requests</div>
       <div class="plot"><div class="yax"><span id="ax-active-top">0</span><span>0</span></div><div class="bars" id="ch-active"></div></div>
       <div class="cap" id="cap-active">current: 0</div></div>
     <div class="tile spark" data-i18n-title="tip_hist_gen"><div class="lbl" data-i18n="lbl_gtok">Gen Tokens/s</div>
       <div class="plot"><div class="yax"><span id="ax-gen-top">0</span><span>0</span></div><div class="bars" id="ch-gen"></div></div>
       <div class="cap" id="cap-gen">current: 0.0 tok/s</div></div>
+    <div class="tile spark" data-i18n-title="tip_hist_ptok"><div class="lbl" data-i18n="lbl_ptok">Prompt Tokens/s</div>
+      <div class="plot"><div class="yax"><span id="ax-ptok-top">0</span><span>0</span></div><div class="bars" id="ch-ptok"></div></div>
+      <div class="cap" id="cap-ptok">current: 0.0 tok/s</div></div>
     <div class="tile spark" data-i18n-title="tip_hist_kv"><div class="lbl" data-i18n="lbl_gpucache">GPU Cache %</div>
       <div class="plot"><div class="yax"><span id="ax-kv-top">0%</span><span>0</span></div><div class="bars" id="ch-kv"></div></div>
       <div class="cap" id="cap-kv">current: 0.0%</div></div>
@@ -393,8 +396,8 @@ async function tick(){
     [['e2e','latency_e2e'],['ttft','latency_ttft'],['tpot','latency_tpot'],['queue','queue_time']].forEach(([id,k])=>{
       const v=d[k];setVal(id,v>0?'c-white':'c-dim',v>0?fmtDur(v):'—');});
     /* throughput & cache */
-    setVal('ptok','c-white',(d.prompt_tok_s||0).toFixed(1));
-    setVal('gtok','c-white',(d.gen_tok_s||0).toFixed(1));
+    setVal('ptok','c-white',d.prompt_tok_s!=null?d.prompt_tok_s.toFixed(1):'—');
+    setVal('gtok','c-white',d.gen_tok_s!=null?d.gen_tok_s.toFixed(1):'—');
     setVal('kv','c-white',((d.kv_usage||0)*100).toFixed(1)+'%');
     setVal('pcache','c-white',((d.prefix_hit_ratio||0)*100).toFixed(1)+'%');
     /* stats */
@@ -418,7 +421,9 @@ async function tick(){
     paintAxis($('ch-active'),h.active||[],x=>Math.round(x)+'','ax-active-top',hts);
     $('cap-active').textContent=t('cap_cur')+': '+Math.round(d.running||0);
     paintAxis($('ch-gen'),h.gen_tok_s||[],x=>Math.round(x)+'','ax-gen-top',hts);
-    $('cap-gen').textContent=t('cap_cur')+': '+(d.gen_tok_s||0).toFixed(1)+' '+t('u_toks');
+    $('cap-gen').textContent=t('cap_cur')+': '+(d.gen_tok_s!=null?d.gen_tok_s.toFixed(1):'0.0')+' '+t('u_toks');
+    paintAxis($('ch-ptok'),h.prompt_tokens||[],x=>Math.round(x)+'','ax-ptok-top',hts);
+    $('cap-ptok').textContent=t('cap_cur')+': '+(d.prompt_tok_s!=null?d.prompt_tok_s.toFixed(1):'0.0')+' '+t('u_toks');
     paintAxis($('ch-kv'),h.kv_pct||[],x=>Math.round(x)+'%','ax-kv-top',hts);
     $('cap-kv').textContent=t('cap_cur')+': '+((d.kv_usage||0)*100).toFixed(1)+'%';
     last=d;

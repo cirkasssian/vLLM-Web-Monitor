@@ -93,8 +93,8 @@ class Sampler:
             'preempted': cur.get('preempted'),
             'kv_usage': cur.get('kv_usage'),
             # rates
-            'prompt_tok_s': rate('prompt_tokens'),
-            'gen_tok_s': rate('gen_tokens'),
+            'prompt_tok_s': self._smoothed_rate('prompt_tokens'),
+            'gen_tok_s': self._smoothed_rate('gen_tokens'),
             # prefix cache hit ratio
             'prefix_hit_ratio': self._ratio(cur, 'prefix_hits', 'prefix_queries'),
             # spec decode (lifetime cumulative, mirrors terminal)
@@ -127,6 +127,8 @@ class Sampler:
             'active': [round(h.get('running') or 0, 1) for h in seg],
             'gen_tok_s': [_safe_rate(self, i) for i in range(len(self.history) - n, len(self.history))],
             'kv_pct': [round((h.get('kv_usage') or 0) * 100, 1) for h in seg],
+            'prompt_tokens': [h.get('prompt_tokens') for h in seg],
+            'gen_tokens': [h.get('gen_tokens') for h in seg],
         }
         data['history']['gen_tok_s'] = [round(v, 1) if v is not None else None for v in data['history']['gen_tok_s']]
         return data
@@ -136,6 +138,34 @@ class Sampler:
         if num is None or den is None or den == 0:
             return None
         return min(1.0, num / den)
+
+    def _smoothed_rate(self, key: str, window: float = 15.0) -> Optional[float]:
+        # Sliding-window rate over the last `window` seconds: farthest
+        # snapshot within the window minus the newest, divided by the
+        # elapsed span. Smooths out single-interval bursts (big prefills)
+        # and counter granularity noise while staying responsive.
+        hist = self.history
+        if len(hist) < 2:
+            return None
+        newest = hist[-1]
+        new_val = newest.get(key)
+        if new_val is None:
+            return None
+        cutoff = newest['ts'] - window
+        base = None
+        for h in reversed(list(hist)):
+            if h['ts'] <= cutoff:
+                base = h
+                break
+        if base is None:
+            return None
+        old_val = base.get(key)
+        if old_val is None or old_val > new_val:
+            return None
+        dt = newest['ts'] - base['ts']
+        if dt <= 0:
+            return None
+        return (new_val - old_val) / dt
 
     def _spec_accept_lifetime(self, cur: dict) -> Optional[float]:
         a, d = cur.get('spec_accepted'), cur.get('spec_draft_tokens')
